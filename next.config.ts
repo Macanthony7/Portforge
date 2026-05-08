@@ -1,8 +1,11 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
-};
+  experimental: {
+    serverActions: { allowedOrigins: ['localhost:3000'] },
+  },
+  // Puppeteer needs these excluded from serverless bundling
+  serverExternalPackages: ['puppeteer-core'],
+}
 
-export default nextConfig;
+export default nextConfig
