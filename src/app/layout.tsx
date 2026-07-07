@@ -4,8 +4,8 @@ import { GeistMono } from 'geist/font/mono'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Portforge — Document your craft.',
-  description: 'AI-generated, recruiter-ready documentation for every tech career.',
+  title: 'Portforge Cyber — Document your security craft.',
+  description: 'AI-generated, professional security documentation for penetration testers and CTF players.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

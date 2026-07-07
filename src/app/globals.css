@@ -1,44 +1,320 @@
 @import "tailwindcss";
 
+@theme {
+  --color-bg-primary: #06080f;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-card: #121526;
+  --color-border-card: rgba(0, 0, 0, 0.08);
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #64748b;
+  --color-accent: oklch(60% 0.25 300);
+  --color-accent-glow: rgba(155, 92, 246, 0.35);
+  --color-cyan: #00e5ff;
+  --color-green: #00FF88;
+  --color-red: #FF4757;
+  --color-bg-primary-rgb: 6, 8, 15;
+  --color-bg-card-rgb: 18, 21, 38;
+}
+
+.dark {
+  --color-bg-primary: #050507;
+  --color-bg-secondary: #0A0A0F;
+  --color-bg-card: #0A0A0F;
+  --color-border-card: rgba(136, 136, 145, 0.2);
+  --color-text-primary: #E2E2E7;
+  --color-text-secondary: #888891;
+  --color-bg-primary-rgb: 5, 5, 7;
+  --color-bg-card-rgb: 10, 10, 15;
+}
+
 @layer base {
-  :root {
-    --forge-navy: #1A1A2E;
-    --forge-purple: #534AB7;
-    --forge-lilac: #AFA9EC;
-    --forge-mist: #EEEDFE;
-    --forge-black: #0F0F14;
+  *, *::before, *::after { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
   }
-  * { box-sizing: border-box; }
-  body { background-color: var(--forge-black); color: white; }
-  ::selection { background: #534AB7; color: white; }
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #534AB740; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #534AB7; }
+
+  html { 
+    scroll-behavior: smooth; 
+    font-size: 16px; 
+  }
+
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    overflow-x: hidden;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  a { 
+    color: var(--color-accent); 
+    text-decoration: none; 
+    transition: color 0.2s; 
+  }
+
+  a:hover { 
+    color: #fff; 
+  }
+
+  ::selection { 
+    background: var(--color-accent); 
+    color: #fff; 
+  }
+
+  ::-webkit-scrollbar { 
+    width: 8px; 
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-bg-primary);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
 }
 
 @layer components {
+  .headline {
+    font-family: 'Archivo Expanded', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+
+  .nav-glass {
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .text-muted {
+    color: var(--color-text-secondary);
+  }
+
+  .bg-slate {
+    background-color: #080d12;
+  }
+
+  .bg-void {
+    background-color: #f8fafc;
+  }
+
+  .dark .bg-slate {
+    background-color: #0A0A0F;
+  }
+
+  .dark .bg-void {
+    background-color: #050507;
+  }
+
+  /* Forge UI Components */
   .forge-card {
-    @apply bg-forge-navy/50 border border-white/5 rounded-xl backdrop-blur-sm;
+    background-color: var(--color-bg-card);
+    border: 1px solid var(--color-border-card);
+    border-radius: 0.75rem;
   }
-  .forge-input {
-    @apply w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5
-           text-white placeholder:text-white/30 text-sm
-           focus:outline-none focus:border-forge-purple/60 focus:ring-1 focus:ring-forge-purple/30
-           transition-colors duration-200;
+
+  .dark .forge-card {
+    background-color: rgba(var(--color-bg-card-rgb), 0.03);
+    border: 1px solid var(--color-border-card);
   }
-  .forge-btn-primary {
-    @apply bg-forge-purple hover:bg-forge-purple/90 text-white text-sm font-medium
-           px-4 py-2.5 rounded-lg transition-all duration-200
-           focus:outline-none focus:ring-2 focus:ring-forge-purple/50
-           disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  .forge-btn-secondary {
-    @apply bg-white/5 hover:bg-white/10 text-white/80 hover:text-white text-sm font-medium
-           px-4 py-2.5 rounded-lg border border-white/10 hover:border-white/20
-           transition-all duration-200 focus:outline-none;
-  }
+
   .forge-label {
-    @apply text-xs font-medium text-white/40 uppercase tracking-wider;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+
+  .dark .forge-label {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .forge-input {
+    width: 100%;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border-card);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: #1a1a2e;
+    transition: border-color 0.2s;
+  }
+
+  .forge-input:focus {
+    outline: none;
+    border-color: rgba(83, 74, 183, 0.6);
+  }
+
+  .dark .forge-input {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+  }
+
+  .dark .forge-input:focus {
+    border-color: rgba(175, 169, 236, 0.6);
+  }
+
+  .forge-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #534ab7;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .forge-btn-primary:hover {
+    filter: brightness(1.1);
+  }
+
+  .forge-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .forge-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .forge-btn-secondary:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #1a1a2e;
+  }
+
+  .dark .forge-btn-secondary {
+    color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .dark .forge-btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+  }
+
+  .grid-overlay {
+    background-image: 
+        linear-gradient(to right, rgba(136, 136, 145, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(136, 136, 145, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .scanline {
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--color-accent), transparent);
+    opacity: 0.3;
+    animation: scanline 8s linear infinite;
+  }
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background-color: var(--color-text-primary);
+    animation: cursor-blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  .btn-purple {
+    background-color: var(--color-accent);
+    color: var(--color-bg-primary);
+    font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Debug helpers: enable by adding `debug` class to <html> */
+  .debug .forge-card {
+    outline: 2px solid rgba(255, 0, 0, 0.6);
+  }
+  .debug .forge-btn-primary {
+    outline: 2px solid rgba(0, 255, 0, 0.25);
+  }
+
+  /* UI overlay helpers (use instead of Tailwind's bg-white/x to respect theme vars) */
+  .bg-ui-02 { background-color: rgba(var(--color-bg-card-rgb), 0.02); }
+  .bg-ui-05 { background-color: rgba(var(--color-bg-card-rgb), 0.05); }
+  .bg-ui-10 { background-color: rgba(var(--color-bg-card-rgb), 0.10); }
+  .bg-ui-20 { background-color: rgba(var(--color-bg-card-rgb), 0.20); }
+  .bg-ui-100 { background-color: var(--color-bg-secondary); }
+
+  .border-ui-10 { border: 1px solid var(--color-border-card); }
+  .hover-bg-ui-10:hover { background-color: rgba(var(--color-bg-card-rgb), 0.10); }
+
+  .btn-purple:hover {
+    filter: brightness(1.2);
+    transform: translateY(-2px);
+    box-shadow: 0 0 30px var(--color-accent);
+  }
+
+  .border-tactical {
+    border: 1px solid rgba(136, 136, 145, 0.2);
+  }
+
+  .terminal-glow {
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(136, 136, 145, 0.05);
+  }
+
+  .forge-container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+    padding: 0 24px; 
+    position: relative; 
+    z-index: 1; 
+  }
+  
+  .forge-section { 
+    padding: 72px 0; 
+    position: relative; 
+  }
+
+  /* Reveal on Scroll */
+  .reveal { 
+    opacity: 0; 
+    transform: translateY(30px); 
+    transition: opacity 0.6s ease, transform 0.6s ease; 
+  }
+  .reveal.visible { 
+    opacity: 1; 
+    transform: translateY(0); 
   }
 }

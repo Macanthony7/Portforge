@@ -1,222 +1,256 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { useLocalMode } from '@/hooks/use-local-mode'
-import { UpgradeModal } from '@/components/ui/upgrade-modal'
-import { cn, slugify } from '@/lib/utils'
-import type { DocumentationMode, SubscriptionTier } from '@/types'
+import { useState, useEffect, useCallback } from 'react'
+import { getModelsForProvider, storeApiKey, getStoredApiKey, clearAllApiKeys, PROVIDER_CONFIGS } from '@/lib/llm/config'
+import { createLLMClient } from '@/lib/llm/client'
+import type { LLMProvider } from '@/types'
+
+const PROVIDERS: { id: LLMProvider; name: string }[] = [
+  { id: 'anthropic', name: 'Anthropic Claude' },
+  { id: 'openai', name: 'OpenAI' },
+  { id: 'google', name: 'Google Gemini' },
+  { id: 'nvidia', name: 'NVIDIA NIM' },
+  { id: 'groq', name: 'Groq' },
+  { id: 'moonshot', name: 'Moonshot (Kimi)' },
+  { id: 'z-ai', name: 'Zai (GLM)' },
+  { id: 'minimax', name: 'Minimax' },
+]
 
 export default function SettingsPage() {
-  const router = useRouter()
-  const { isLocalMode, toggleLocalMode } = useLocalMode()
-  const [fullName, setFullName] = useState('')
-  const [username, setUsername] = useState('')
-  const [bio, setBio] = useState('')
-  const [mode, setMode] = useState<DocumentationMode>('static')
-  const [portfolioPublic, setPortfolioPublic] = useState(true)
-  const [tier, setTier] = useState<SubscriptionTier>('free')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [usernameError, setUsernameError] = useState('')
-  const [showUpgrade, setShowUpgrade] = useState(false)
+  const [activeTab, setActiveTab] = useState<'llm' | 'preferences' | 'about'>('llm')
+  const [provider, setProvider] = useState<LLMProvider>('anthropic')
+  const [model, setModel] = useState('')
+  const [apiKey, setApiKey] = useState('')
+  const [customEndpoint, setCustomEndpoint] = useState('')
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
+  const [testError, setTestError] = useState('')
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase.from('profiles')
-        .select('full_name, username, bio, documentation_mode, subscription_tier, portfolio_public')
-        .eq('id', user.id).single()
-      if (data) {
-        setFullName(data.full_name || '')
-        setUsername(data.username || '')
-        setBio(data.bio || '')
-        setMode(data.documentation_mode as DocumentationMode)
-        setTier(data.subscription_tier as SubscriptionTier)
-        setPortfolioPublic(data.portfolio_public ?? true)
-      }
-    }
-    load()
-  }, [])
+    const saved = getStoredApiKey(provider)
+    setApiKey(saved)
+    const models = getModelsForProvider(provider)
+    if (models.length > 0) setModel(models[0].id)
+    setTestStatus('idle')
+    setTestError('')
+  }, [provider])
 
-  // Auto-generate username from full name if not set
-  function handleNameChange(name: string) {
-    setFullName(name)
-    if (!username) setUsername(slugify(name))
+  const handleTestConnection = useCallback(async () => {
+    setTestStatus('testing')
+    setTestError('')
+    try {
+      const client = createLLMClient({ provider, model, apiKey, customEndpoint: customEndpoint || undefined })
+      const result = await client.testConnection()
+      setTestStatus(result.success ? 'success' : 'error')
+      if (!result.success) setTestError(result.error || 'Connection failed')
+    } catch (err) {
+      setTestStatus('error')
+      setTestError(err instanceof Error ? err.message : 'Connection failed')
+    }
+  }, [provider, model, apiKey, customEndpoint])
+
+  const handleSaveKey = () => {
+    storeApiKey(provider, apiKey)
   }
 
-  async function handleSave() {
-    setUsernameError('')
-    if (username && !/^[a-z0-9-]+$/.test(username)) {
-      setUsernameError('Username can only contain lowercase letters, numbers and hyphens.')
-      return
+  const handleClearKeys = () => {
+    if (confirm('Are you sure you want to clear all stored API keys? This cannot be undone.')) {
+      clearAllApiKeys()
+      setApiKey('')
+      setTestStatus('idle')
+      setTestError('')
     }
-    setSaving(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { error } = await supabase.from('profiles')
-      .update({ full_name: fullName, username, bio, documentation_mode: mode, portfolio_public: portfolioPublic })
-      .eq('id', user.id)
-
-    if (error?.message?.includes('unique')) {
-      setUsernameError('This username is already taken. Choose another.')
-      setSaving(false)
-      return
-    }
-
-    setSaving(false); setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
   }
 
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
-  const portfolioUrl = username ? `${typeof window !== 'undefined' ? window.location.origin : ''}/u/${username}` : null
+  const models = getModelsForProvider(provider)
+  const providerConfig = PROVIDER_CONFIGS[provider]
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)}/>
+    <div className="p-8 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-semibold mb-8 text-white">Settings</h1>
 
-      <h1 className="text-2xl font-semibold mb-8">Settings</h1>
-
-      {/* Profile */}
-      <section className="forge-card p-6 mb-5">
-        <h2 className="text-sm font-medium mb-4">Profile</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="forge-label block mb-2">Full name</label>
-            <input type="text" value={fullName} onChange={e => handleNameChange(e.target.value)}
-              className="forge-input" placeholder="Ada Lovelace"/>
-          </div>
-          <div>
-            <label className="forge-label block mb-2">Username</label>
-            <div className="flex items-center">
-              <span className="text-sm text-white/30 px-3 py-2.5 bg-white/5 border border-r-0 border-white/10 rounded-l-lg">/u/</span>
-              <input type="text" value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                className="forge-input rounded-l-none flex-1" placeholder="ada-lovelace"/>
-            </div>
-            {usernameError && <p className="text-xs text-red-400 mt-1">{usernameError}</p>}
-            {portfolioUrl && !usernameError && (
-              <p className="text-xs text-white/30 mt-1">
-                Portfolio: <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-forge-lilac hover:underline">{portfolioUrl}</a>
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="forge-label block mb-2">Bio <span className="text-white/20 normal-case font-normal">(optional)</span></label>
-            <textarea value={bio} onChange={e => setBio(e.target.value)}
-              className="forge-input resize-none" rows={2} placeholder="Security researcher · CTF enthusiast · Building cool things"/>
-          </div>
-        </div>
-      </section>
-
-      {/* Portfolio visibility */}
-      <section className="forge-card p-6 mb-5">
-        <h2 className="text-sm font-medium mb-1">Portfolio visibility</h2>
-        <p className="text-xs text-white/40 mb-4">Control who can see your public portfolio page.</p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm">{portfolioPublic ? 'Public' : 'Private'}</p>
-            <p className="text-xs text-white/40 mt-0.5">
-              {portfolioPublic ? 'Anyone with your portfolio link can view it.' : 'Your portfolio is hidden from everyone.'}
-            </p>
-          </div>
-          <button onClick={() => setPortfolioPublic(!portfolioPublic)}
-            className={cn('w-11 h-6 rounded-full transition-colors relative shrink-0', portfolioPublic ? 'bg-forge-purple' : 'bg-white/10')}>
-            <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-sm',
-              portfolioPublic ? 'translate-x-5' : 'translate-x-0.5')}/>
+      <div className="flex items-center gap-1 mb-8 border-b border-white/5">
+        {[
+          { id: 'llm' as const, label: 'LLM Configuration' },
+          { id: 'preferences' as const, label: 'Preferences' },
+          { id: 'about' as const, label: 'About' },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+              activeTab === tab.id ? 'border-forge-purple text-white' : 'border-transparent text-white/40 hover:text-white/60'
+            }`}>
+            {tab.label}
           </button>
-        </div>
-      </section>
-
-      {/* Documentation mode */}
-      <section className="forge-card p-6 mb-5">
-        <h2 className="text-sm font-medium mb-1">Documentation mode</h2>
-        <p className="text-xs text-white/40 mb-4">Applied to all new projects. Change any time in Settings.</p>
-        <div className="grid grid-cols-2 gap-3">
-          {([
-            { value: 'static', label: 'Static', icon: '✦', desc: 'AI asks questions and writes the full document from your answers.' },
-            { value: 'integrative', label: 'Integrative', icon: '⬡', desc: 'Connect GitHub, upload Nmap/Burp files. AI pulls data automatically.', locked: tier === 'free' },
-          ] as const).map(opt => (
-            <button key={opt.value}
-              onClick={() => {
-                if (opt.locked) { setShowUpgrade(true); return }
-                setMode(opt.value as DocumentationMode)
-              }}
-              className={cn('p-4 rounded-xl border text-left transition-all',
-                mode === opt.value && !opt.locked ? 'border-forge-purple/50 bg-forge-purple/10' : 'border-white/10 bg-white/5 hover:border-white/20',
-                opt.locked && 'opacity-60')}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-forge-purple">{opt.icon}</span>
-                {opt.locked && <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">Audit Mode</span>}
-              </div>
-              <p className="text-sm font-medium mb-1">{opt.label}</p>
-              <p className="text-xs text-white/40 leading-relaxed">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Local mode */}
-      <section className="forge-card p-6 mb-5">
-        <h2 className="text-sm font-medium mb-1">Local mode</h2>
-        <p className="text-xs text-white/40 mb-4">
-          When enabled, projects are stored only in your browser — nothing is sent to our servers.
-          Ideal for sensitive audit work.
-        </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm">{isLocalMode ? 'Local mode active' : 'Cloud mode (default)'}</p>
-            <p className="text-xs text-white/40 mt-0.5">
-              {isLocalMode ? 'Data stays in your browser. Export to markdown to save.' : 'Projects sync to Supabase securely.'}
-            </p>
-          </div>
-          <button onClick={() => toggleLocalMode(!isLocalMode)}
-            className={cn('w-11 h-6 rounded-full transition-colors relative shrink-0', isLocalMode ? 'bg-forge-purple' : 'bg-white/10')}>
-            <span className={cn('absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-sm',
-              isLocalMode ? 'translate-x-5' : 'translate-x-0.5')}/>
-          </button>
-        </div>
-        {isLocalMode && (
-          <div className="mt-4 bg-amber-950/30 border border-amber-900/40 text-amber-400 text-xs px-4 py-3 rounded-lg">
-            ⚠ Local mode projects are not backed up. Export to markdown regularly.
-          </div>
-        )}
-      </section>
-
-      {/* Subscription */}
-      <section className="forge-card p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-medium mb-1">Subscription</h2>
-            <p className="text-xs text-white/40">You are on the <span className="text-white/70 capitalize">{tier}</span> plan</p>
-          </div>
-          {tier === 'free' && (
-            <button onClick={() => setShowUpgrade(true)} className="forge-btn-primary text-xs py-2">Upgrade →</button>
-          )}
-        </div>
-        {tier === 'free' && (
-          <div className="mt-4 text-xs text-white/30 space-y-1">
-            <p>• 2 projects per career track on Free</p>
-            <p>• Pro ($12/mo): Unlimited + PDF export + custom branding</p>
-            <p>• Audit Mode ($28/mo): Everything + GitHub, Nmap & Burp integrations</p>
-          </div>
-        )}
-      </section>
-
-      <div className="flex items-center gap-3">
-        <button onClick={handleSave} disabled={saving} className="forge-btn-primary">
-          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
-        </button>
-        <button onClick={handleSignOut} className="forge-btn-secondary text-red-400/70 hover:text-red-400">Sign out</button>
+        ))}
       </div>
+
+      {activeTab === 'llm' && (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label className="forge-label block mb-2">LLM Provider</label>
+              <select
+                value={provider}
+                onChange={e => setProvider(e.target.value as LLMProvider)}
+                className="forge-input"
+              >
+                {PROVIDERS.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="forge-label block mb-2">Model</label>
+              <select value={model} onChange={e => setModel(e.target.value)} className="forge-input">
+                {models.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.description} (max {m.maxTokens.toLocaleString()} tokens)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="forge-label block mb-2">API Key</label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={e => { setApiKey(e.target.value); handleSaveKey() }}
+                placeholder="sk-... or your provider's API key"
+                className="forge-input"
+              />
+              <p className="text-xs text-white/30 mt-1">Stored locally in your browser. Never leaves this device.</p>
+            </div>
+
+            {providerConfig?.requireCustomEndpoint && (
+              <div>
+                <label className="forge-label block mb-2">Custom Endpoint (Optional)</label>
+                <input
+                  type="text"
+                  value={customEndpoint}
+                  onChange={e => setCustomEndpoint(e.target.value)}
+                  placeholder="https://your-nim-endpoint.com/v1"
+                  className="forge-input"
+                />
+                <p className="text-xs text-white/30 mt-1">Leave empty to use the default endpoint.</p>
+              </div>
+            )}
+
+            {provider === 'google' && (
+              <div>
+                <label className="forge-label block mb-2">Custom Endpoint (Optional)</label>
+                <input
+                  type="text"
+                  value={customEndpoint}
+                  onChange={e => setCustomEndpoint(e.target.value)}
+                  placeholder="https://your-proxy.com/v1beta"
+                  className="forge-input"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 pt-2">
+              <button onClick={handleTestConnection} disabled={testStatus === 'testing'}
+                className="forge-btn-primary">
+                {testStatus === 'testing' ? 'Testing…' : 'Test Connection'}
+              </button>
+
+              {testStatus === 'success' && (
+                <span className="flex items-center gap-1.5 text-sm text-emerald-400">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Connected
+                </span>
+              )
+              }
+              {testStatus === 'error' && (
+                <span className="flex items-center gap-1.5 text-sm text-red-400">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  {testError || 'Connection failed'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-6">
+            <button onClick={handleClearKeys}
+              className="text-sm text-red-400 hover:text-red-300 transition-colors">
+              Clear all stored API keys
+            </button>
+          </div>
+        </div>
+      )
+      }
+
+      {activeTab === 'preferences' && (
+        <div className="space-y-6">
+          <div>
+            <label className="forge-label block mb-2">Theme</label>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: 'cyber-dark-terminal', name: 'Dark Terminal', desc: 'Black bg · monospace accents' },
+                { id: 'cyber-forge-dark', name: 'Forge Dark', desc: 'Navy bg · purple accents' },
+                { id: 'cyber-audit-light', name: 'Audit Light', desc: 'White bg · client-ready' },
+              ].map(theme => (
+                <div key={theme.id} className="forge-card p-4 cursor-pointer hover:border-white/20 transition-all">
+                  <h3 className="text-sm font-medium mb-1 text-white">{theme.name}</h3>
+                  <p className="text-xs text-white/40">{theme.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-white/5 pt-6">
+            <label className="forge-label block mb-2">Data Management</label>
+            <p className="text-sm text-white/40 mb-3">All data is stored locally in your browser via IndexedDB.</p>
+            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+              <p className="text-xs text-white/30">No cloud sync. Your projects stay on this device.</p>
+            </div>
+          </div>
+        </div>
+      )
+      }
+
+      {activeTab === 'about' && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-forge-purple rounded-lg flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 14 14" fill="none">
+                <rect x="1" y="1" width="5" height="7" rx="1" fill="#EEEDFE"/>
+                <rect x="8" y="1" width="5" height="4" rx="1" fill="#AFA9EC"/>
+                <rect x="1" y="10" width="5" height="3" rx="1" fill="#AFA9EC"/>
+                <rect x="8" y="7" width="5" height="6" rx="1" fill="#EEEDFE"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">Portforge Cyber</h2>
+              <p className="text-sm text-white/40">Version 0.3.0 — Local-first edition</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-white/60 leading-relaxed">
+            Portforge Cyber is an open-source security documentation platform for penetration testers,
+            students, and security professionals. Generate professional pentest reports, CTF write-ups,
+            and lab documentation with multi-model LLM support.
+          </p>
+
+          <div className="border-t border-white/5 pt-6 space-y-3">
+            <h3 className="text-sm font-medium text-white">Links</h3>
+            <div className="space-y-2">
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-sm text-forge-lilac hover:text-white transition-colors block">GitHub Repository</a>
+              <a href="#" className="text-sm text-forge-lilac hover:text-white transition-colors block">Documentation</a>
+              <a href="#" className="text-sm text-forge-lilac hover:text-white transition-colors block">License (MIT)</a>
+            </div>
+          </div>
+
+          <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+            <p className="text-xs text-white/30">Data is stored locally. API keys never leave your browser.</p>
+          </div>
+        </div>
+      )
+      }
     </div>
   )
 }

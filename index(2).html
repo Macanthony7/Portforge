@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portforge Cyber — AI-Powered Security Documentation</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-card: #13131d;
+      --border-card: rgba(255,255,255,0.07);
+      --text-primary: #e4e4e7;
+      --text-secondary: #8b8b9e;
+      --accent: #6c5ce7;
+      --accent-glow: rgba(108,92,231,0.35);
+      --cyan: #00e5ff;
+      --cyan-glow: rgba(0,229,255,0.25);
+      --green: #00ff88;
+      --green-glow: rgba(0,255,136,0.2);
+      --red: #ff4757;
+      --orange: #ffa502;
+      --yellow: #ffe066;
+      --radius: 16px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    a { color: var(--cyan); text-decoration: none; transition: color .2s; }
+    a:hover { color: #fff; }
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* Background */
+    .gradient-orb {
+      position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0;
+      animation: orbFloat 12s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 600px; height: 600px; top: -10%; left: -10%; background: radial-gradient(circle, rgba(108,92,231,0.15), transparent 70%); }
+    .orb-2 { width: 500px; height: 500px; bottom: -10%; right: -10%; background: radial-gradient(circle, rgba(0,229,255,0.1), transparent 70%); animation-delay: -6s; }
+    .orb-3 { width: 400px; height: 400px; top: 40%; left: 50%; background: radial-gradient(circle, rgba(0,255,136,0.08), transparent 70%); animation-delay: -3s; }
+    @keyframes orbFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(60px, -40px) scale(1.15); }
+    }
+
+    .grid-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
+    }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    section { padding: 72px 0; position: relative; }
+
+    /* Navbar */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+      padding: 14px 0;
+      backdrop-filter: blur(20px) saturate(1.4);
+      background: rgba(10,10,15,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: all .3s ease;
+    }
+    nav.scrolled { padding: 10px 0; background: rgba(10,10,15,0.92); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+    .logo-icon {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: #fff;
+      box-shadow: 0 0 20px var(--accent-glow);
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%, 100% { box-shadow: 0 0 20px var(--accent-glow); }
+      50% { box-shadow: 0 0 35px var(--accent-glow), 0 0 60px rgba(108,92,231,0.12); }
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--text-secondary); font-size: 0.88rem; font-weight: 500; transition: color .2s; position: relative; }
+    .nav-links a:hover { color: #fff; }
+    .nav-links a::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 2px; background: var(--cyan); transition: width .3s ease; }
+    .nav-links a:hover::after { width: 100%; }
+    .btn-nav {
+      padding: 7px 18px; border-radius: 10px; border: 1px solid rgba(108,92,231,0.4);
+      background: rgba(108,92,231,0.1); color: #fff; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all .3s;
+    }
+    .btn-nav:hover { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 25px var(--accent-glow); }
+
+    /* Hero */
+    .hero { min-height: 100vh; display: flex; align-items: center; padding-top: 80px; }
+    .hero-content { text-align: center; max-width: 900px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px 6px 8px; border-radius: 100px;
+      background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.15);
+      font-size: 0.78rem; color: var(--cyan); margin-bottom: 28px;
+      animation: fadeSlideUp .8s ease-out;
+    }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .hero h1 {
+      font-size: clamp(2.4rem, 5.5vw, 4rem); font-weight: 800; line-height: 1.1;
+      letter-spacing: -1.5px; margin-bottom: 20px;
+      animation: fadeSlideUp .8s ease-out .1s both;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--accent), var(--cyan), var(--green));
+      background-size: 200% 200%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease-in-out infinite;
+    }
+    @keyframes gradientShift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .hero p.subtitle {
+      font-size: 1.1rem; color: var(--text-secondary); max-width: 640px; margin: 0 auto 16px;
+      animation: fadeSlideUp .8s ease-out .2s both;
+    }
+    .hero p.sub2 {
+      font-size: 0.92rem; color: var(--text-secondary); max-width: 560px; margin: 0 auto 36px;
+      animation: fadeSlideUp .8s ease-out .25s both; opacity: 0.7;
+    }
+
+    /* Badges */
+    .tech-badges {
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 32px; animation: fadeSlideUp .8s ease-out .22s both;
+    }
+    .tech-badge {
+      padding: 5px 14px; border-radius: 8px; font-size: 0.72rem; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+      font-family: var(--font-mono); letter-spacing: 0.3px;
+    }
+    .tech-badge.nextjs { color: #fff; }
+    .tech-badge.ts { color: #3178c6; }
+    .tech-badge.tw { color: #38bdf8; }
+    .tech-badge.license { color: var(--green); }
+
+    .hero-buttons {
+      display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+      animation: fadeSlideUp .8s ease-out .3s both;
+    }
+    .btn-primary {
+      padding: 13px 30px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+      transition: all .3s; position: relative; overflow: hidden;
+    }
+    .btn-primary::before {
+      content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transition: left .5s;
+    }
+    .btn-primary:hover::before { left: 100%; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--accent-glow); }
+    .btn-secondary {
+      padding: 13px 30px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
+      color: #fff; font-size: 0.92rem; font-weight: 600; cursor: pointer;
+      transition: all .3s;
+    }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); transform: translateY(-2px); }
+
+    /* Terminal */
+    .hero-terminal {
+      margin-top: 48px;
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius); overflow: hidden;
+      max-width: 640px; margin-left: auto; margin-right: auto;
+      animation: fadeSlideUp .8s ease-out .4s both;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .terminal-bar {
+      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+      background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+    .terminal-title { margin-left: 12px; font-size: 0.75rem; color: var(--text-secondary); }
+    .terminal-body {
+      padding: 20px 24px; font-family: var(--font-mono); font-size: 0.82rem;
+      line-height: 1.8; color: var(--text-secondary);
+    }
+    .terminal-body .prompt { color: var(--green); }
+    .terminal-body .cmd { color: #fff; }
+    .terminal-body .flag { color: var(--cyan); }
+    .terminal-body .comment { color: var(--text-secondary); opacity: 0.4; }
+    .terminal-body .output { color: var(--text-secondary); }
+    .terminal-body .url { color: var(--cyan); }
+    .terminal-cursor { display: inline-block; width: 8px; height: 16px; background: var(--cyan); animation: cursorBlink 1s step-end infinite; vertical-align: middle; margin-left: 4px; }
+    @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Section headers */
+    .section-header { text-align: center; margin-bottom: 48px; }
+    .section-label {
+      display: inline-block; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 3px; color: var(--cyan);
+      margin-bottom: 12px;
+    }
+    .section-header h2 { font-size: clamp(1.8rem, 3.5vw, 2.5rem); font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+    .section-header p { color: var(--text-secondary); max-width: 540px; margin: 0 auto; font-size: 1rem; }
+
+    /* Features */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .feature-card {
+      padding: 32px; border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      transition: all .4s ease; position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity .4s;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:hover { border-color: rgba(108,92,231,0.2); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 16px;
+    }
+    .icon-shield { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.15); }
+    .icon-brain { background: rgba(108,92,231,0.1); border: 1px solid rgba(108,92,231,0.15); }
+    .icon-cvss { background: rgba(255,165,2,0.1); border: 1px solid rgba(255,165,2,0.15); }
+    .icon-template { background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.15); }
+    .icon-export { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.15); }
+    .icon-local { background: rgba(255,224,102,0.1); border: 1px solid rgba(255,224,102,0.15); }
+    .icon-cloud { background: rgba(108,92,231,0.1); border: 1px solid rgba(108,92,231,0.12); }
+    .feature-card h3 { font-size: 1.08rem; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.6; }
+
+    /* Providers */
+    .providers-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .provider-card {
+      padding: 20px 24px; border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      display: flex; align-items: center; gap: 14px;
+      transition: all .3s;
+    }
+    .provider-card:hover { border-color: rgba(108,92,231,0.2); transform: translateY(-2px); }
+    .provider-icon {
+      width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .provider-icon.p-anthropic { background: rgba(108,92,231,0.12); }
+    .provider-icon.p-openai { background: rgba(0,229,255,0.12); }
+    .provider-icon.p-google { background: rgba(0,255,136,0.12); }
+    .provider-icon.p-nvidia { background: rgba(255,165,2,0.12); }
+    .provider-icon.p-groq { background: rgba(255,71,87,0.12); }
+    .provider-icon.p-moonshot { background: rgba(255,224,102,0.12); }
+    .provider-icon.p-zai { background: rgba(0,229,255,0.12); }
+    .provider-icon.p-minimax { background: rgba(108,92,231,0.12); }
+    .provider-info h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
+    .provider-info p { font-size: 0.75rem; color: var(--text-secondary); }
+
+    /* CVSS Demo */
+    .cvss-demo { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+    .cvss-card { padding: 36px; border-radius: var(--radius); background: var(--bg-card); border: 1px solid var(--border-card); }
+    .cvss-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 20px; }
+    .cvss-score {
+      text-align: center; padding: 28px; border-radius: 12px;
+      background: rgba(255,165,2,0.06); border: 1px solid rgba(255,165,2,0.12);
+      margin-bottom: 20px;
+    }
+    .cvss-number { font-size: 3.2rem; font-weight: 800; color: var(--orange); }
+    .cvss-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-secondary); margin-top: 4px; }
+    .severity-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge { padding: 5px 12px; border-radius: 7px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-critical { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+    .badge-high { background: rgba(255,165,2,0.15); color: var(--orange); border: 1px solid rgba(255,165,2,0.2); }
+    .badge-medium { background: rgba(255,224,102,0.15); color: var(--yellow); border: 1px solid rgba(255,224,102,0.2); }
+    .badge-low { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+    .badge-none { background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.08); }
+    .cvss-info h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
+    .cvss-info p { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.7; font-size: 0.92rem; }
+    .cvss-info ul { list-style: none; }
+    .cvss-info li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 10px; color: var(--text-secondary); font-size: 0.88rem; }
+    .cvss-info li .check { color: var(--green); font-weight: 700; font-size: 1rem; }
+
+    /* Quick Start */
+    .quickstart-code {
+      background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius); overflow: hidden; max-width: 560px; margin: 0 auto;
+    }
+    .qs-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .qs-body { padding: 20px 24px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 2; }
+    .qs-body .line { display: block; }
+    .qs-body .dollar { color: var(--green); }
+    .qs-body .command { color: #fff; }
+    .qs-body .comment { color: var(--text-secondary); opacity: 0.4; }
+    .qs-body .url { color: var(--cyan); }
+
+    /* Roadmap */
+    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .roadmap-item {
+      padding: 20px 24px; border-radius: 12px;
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      display: flex; align-items: center; gap: 14px; transition: all .3s;
+    }
+    .roadmap-item:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-1px); }
+    .roadmap-status { font-size: 1.1rem; flex-shrink: 0; }
+    .roadmap-item h4 { font-size: 0.9rem; font-weight: 600; }
+    .roadmap-item p { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+    .status-ready { color: var(--green); }
+    .status-planned { color: var(--orange); }
+
+    /* Docs */
+    .docs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .doc-card {
+      padding: 24px; border-radius: var(--radius);
+      background: var(--bg-card); border: 1px solid var(--border-card);
+      display: flex; align-items: center; gap: 16px;
+      transition: all .3s; cursor: pointer;
+    }
+    .doc-card:hover { border-color: rgba(0,229,255,0.2); transform: translateY(-2px); }
+    .doc-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.12);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .doc-card h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 3px; }
+    .doc-card p { font-size: 0.78rem; color: var(--text-secondary); }
+
+    /* Contributing */
+    .contrib-card {
+      padding: 36px; border-radius: var(--radius); background: var(--bg-card); border: 1px solid var(--border-card);
+      max-width: 700px; margin: 0 auto; text-align: center;
+    }
+    .contrib-card p { color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 24px; }
+    .contrib-steps { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .contrib-step {
+      padding: 8px 16px; border-radius: 8px; font-size: 0.78rem; font-family: var(--font-mono);
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: var(--text-secondary);
+    }
+    .contrib-step span { color: var(--cyan); }
+
+    /* Footer */
+    footer { padding: 36px 0; border-top: 1px solid rgba(255,255,255,0.04); text-align: center; }
+    footer p { color: var(--text-secondary); font-size: 0.82rem; }
+    footer .heart { color: var(--red); }
+
+    /* Scroll Reveal */
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .cvss-demo { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; }
+      section { padding: 56px 0; }
+      .providers-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .providers-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* Typing */
+    .typing-container { overflow: hidden; }
+    .typing-line { opacity: 0; animation: typeLine .3s ease forwards; }
+    .typing-line:nth-child(1) { animation-delay: .5s; }
+    .typing-line:nth-child(2) { animation-delay: 1.8s; }
+    .typing-line:nth-child(3) { animation-delay: 3.2s; }
+    .typing-line:nth-child(4) { animation-delay: 4.2s; }
+    .typing-line:nth-child(5) { animation-delay: 5s; }
+    @keyframes typeLine { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Particles */
+    .particle {
+      position: fixed; width: 2px; height: 2px; border-radius: 50%;
+      background: rgba(108,92,231,0.4); pointer-events: none; z-index: 0;
+      animation: particleFloat linear infinite;
+    }
+    @keyframes particleFloat {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; } 90% { opacity: 1; }
+      100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Divider */
+    .section-divider {
+      height: 1px; max-width: 200px; margin: 0 auto;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gradient-orb orb-1"></div>
+  <div class="gradient-orb orb-2"></div>
+  <div class="gradient-orb orb-3"></div>
+
+  <!-- Navbar -->
+  <nav id="navbar">
+    <div class="container">
+      <div class="nav-inner">
+        <div class="logo">
+          <div class="logo-icon">P</div>
+          <span>Portforge<span style="color:var(--text-secondary);font-weight:400;font-size:0.9rem"> Cyber</span></span>
+        </div>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#providers">LLMs</a>
+          <a href="#cvss">CVSS</a>
+          <a href="#quickstart">Quickstart</a>
+          <a href="#roadmap">Roadmap</a>
+          <a href="https://github.com/Macanthony7/Portforge" target="_blank" class="btn-nav">⭐ GitHub</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="grid-overlay"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          100% Local — Your Data Never Leaves Your Device
+        </div>
+        <h1>
+          AI-Powered<br>
+          <span class="gradient-text">Security Documentation</span>
+        </h1>
+        <p class="subtitle">
+          Create professional penetration test reports, CTF write-ups, lab walkthroughs, and product docs — powered by multi-model LLMs, right from your browser.
+        </p>
+        <p class="sub2">
+          Open-source · Local-first · BYO API key · CVSS v3.1 built-in
+        </p>
+
+        <div class="tech-badges">
+          <span class="tech-badge nextjs">⬡ Next.js 15</span>
+          <span class="tech-badge ts">TS TypeScript 5</span>
+          <span class="tech-badge tw">🎨 Tailwind 4</span>
+          <span class="tech-badge license">📄 MIT License</span>
+        </div>
+
+        <div class="hero-buttons">
+          <button class="btn-primary" onclick="document.getElementById('quickstart').scrollIntoView({behavior:'smooth'})">
+            🚀 Get Started
+          </button>
+          <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">
+            Explore Features ↓
+          </button>
+        </div>
+
+        <div class="hero-terminal">
+          <div class="terminal-bar">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">portforge — bash</span>
+          </div>
+          <div class="terminal-body typing-container">
+            <span class="typing-line"><span class="prompt">$ </span><span class="cmd">git clone https://github.com/Macanthony7/Portforge.git</span></span>
+            <span class="typing-line"><span class="prompt">$ </span><span class="cmd">cd Portforge && npm install</span><span class="comment">  # install deps</span></span>
+            <span class="typing-line"><span class="output">✓ 247 packages installed</span></span>
+            <span class="typing-line"><span class="prompt">$ </span><span class="cmd">npm run dev</span></span>
+            <span class="typing-line"><span class="output">  ▲ Next.js 15 · </span><span class="url">http://localhost:3000</span><span class="terminal-cursor"></span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Features</span>
+        <h2>Everything You Need,<br>Nothing You Don't</h2>
+        <p>Built for security professionals who value privacy and speed.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-shield">🔒</div>
+          <h3>Privacy-First</h3>
+          <p>All data stored locally via IndexedDB (Dexie.js). No server required. API keys stay in your browser's localStorage. Fully offline-capable once loaded.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-brain">🤖</div>
+          <h3>Multi-Model LLM</h3>
+          <p>8 providers supported — Anthropic, OpenAI, Google, NVIDIA NIM, Groq, Moonshot, Z-ai (GLM), Minimax. Bring your own key, test connections, and switch models per task.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-cvss">📊</div>
+          <h3>CVSS v3.1 Calculator</h3>
+          <p>Full FIRST.org-compliant scoring with all base metrics (AV, AC, PR, UI, S, C, I, A). Color-coded severity badges and vector string generation.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-template">📝</div>
+          <h3>Cybersecurity Templates</h3>
+          <p>Pentest reports, CTF write-ups, and lab walkthroughs — plus track-scoped templates for cybersecurity, software dev, and DevOps/cloud.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-export">📤</div>
+          <h3>Export &amp; Share</h3>
+          <p>Markdown export that's version-control friendly. Export history tracking per project. PDF export coming soon.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon icon-cloud">☁️</div>
+          <h3>Optional Cloud Mode</h3>
+          <p>Extend with Supabase for auth, cloud storage, and streaming AI endpoints. PostgreSQL with Row Level Security — or stick with 100% local.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LLM Providers -->
+  <section id="providers">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">LLM Support</span>
+        <h2>8 Providers, Your Choice</h2>
+        <p>Bring your own API key and pick the model that fits your workflow.</p>
+      </div>
+      <div class="providers-grid reveal">
+        <div class="provider-card">
+          <div class="provider-icon p-anthropic">🟣</div>
+          <div class="provider-info">
+            <h4>Anthropic Claude</h4>
+            <p>Claude 3.5 Sonnet, Opus, Haiku</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-openai">🔵</div>
+          <div class="provider-info">
+            <h4>OpenAI</h4>
+            <p>GPT-4o, GPT-4 Turbo, GPT-3.5</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-google">🟢</div>
+          <div class="provider-info">
+            <h4>Google Gemini</h4>
+            <p>Gemini 2.0 Flash, 1.5 Pro/Flash</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-nvidia">🟠</div>
+          <div class="provider-info">
+            <h4>NVIDIA NIM</h4>
+            <p>Mixtral 8x7B, Llama 3.1</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-groq">🔴</div>
+          <div class="provider-info">
+            <h4>Groq</h4>
+            <p>Mixtral 8x7B, Llama 3 70B/8B</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-moonshot">🟡</div>
+          <div class="provider-info">
+            <h4>Moonshot (Kimi)</h4>
+            <p>v1 8K / 32K / 128K</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-zai">🔷</div>
+          <div class="provider-info">
+            <h4>Z-ai (GLM)</h4>
+            <p>GLM-4 Flash, GLM-4 Plus</p>
+          </div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon p-minimax">💜</div>
+          <div class="provider-info">
+            <h4>Minimax</h4>
+            <p>MiniMax-01, Text-01</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CVSS -->
+  <section id="cvss">
+    <div class="container">
+      <div class="cvss-demo reveal">
+        <div class="cvss-card">
+          <h3>🎯 CVSS v3.1 Score</h3>
+          <div class="cvss-score">
+            <div class="cvss-number" id="cvssCounter">0.0</div>
+            <div class="cvss-label">Base Score</div>
+          </div>
+          <div class="severity-badges">
+            <span class="badge badge-critical">Critical 9.0–10</span>
+            <span class="badge badge-high">High 7.0–8.9</span>
+            <span class="badge badge-medium">Medium 4.0–6.9</span>
+            <span class="badge badge-low">Low 0.1–3.9</span>
+            <span class="badge badge-none">None 0.0</span>
+          </div>
+        </div>
+        <div class="cvss-info">
+          <h3>Built-In Vulnerability Scoring</h3>
+          <p>
+            FIRST.org-spec compliant CVSS v3.1 calculator with every base metric. Attach severity badges to findings with one click.
+          </p>
+          <ul>
+            <li><span class="check">✓</span> Full metric scoring: AV, AC, PR, UI, S, C, I, A</li>
+            <li><span class="check">✓</span> Color-coded severity badges</li>
+            <li><span class="check">✓</span> Vector string generation (CVSS:3.1/AV:…)</li>
+            <li><span class="check">✓</span> Quick presets for rapid assessment</li>
+            <li><span class="check">✓</span> Vector-to-metrics parser for importing scores</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section id="quickstart">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Quick Start</span>
+        <h2>Up and Running in 30 Seconds</h2>
+        <p>No database, no auth — just clone and go.</p>
+      </div>
+      <div class="quickstart-code reveal">
+        <div class="qs-bar">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+        </div>
+        <div class="qs-body">
+          <span class="line"><span class="dollar">$ </span><span class="command">git clone https://github.com/Macanthony7/Portforge.git</span></span>
+          <span class="line"><span class="dollar">$ </span><span class="command">cd Portforge</span></span>
+          <span class="line"><span class="dollar">$ </span><span class="command">npm install</span></span>
+          <span class="line"><span class="dollar">$ </span><span class="command">npm run dev</span></span>
+          <span class="line"><span class="comment"># → Open http://localhost:3000 → Settings → LLM Configuration</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Roadmap -->
+  <section id="roadmap">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Roadmap</span>
+        <h2>What's Here &amp; What's Next</h2>
+      </div>
+      <div class="roadmap-grid reveal">
+        <div class="roadmap-item">
+          <span class="roadmap-status status-ready">✅</span>
+          <div><h4>Local-First Mode</h4><p>IndexedDB via Dexie.js — fully offline</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-ready">✅</span>
+          <div><h4>Multi-Model LLM</h4><p>8 providers, BYO API key</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-ready">✅</span>
+          <div><h4>CVSS v3.1 Calculator</h4><p>Built-in scoring &amp; badges</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-ready">✅</span>
+          <div><h4>Markdown Export</h4><p>Per-project export with history</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-ready">✅</span>
+          <div><h4>Supabase Cloud Mode</h4><p>Auth, RLS, streaming AI</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-planned">🚧</span>
+          <div><h4>PDF Export</h4><p>React-PDF + serverless function</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-planned">🚧</span>
+          <div><h4>Nmap/Burp Parsers</h4><p>Import XML scans directly</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-planned">🚧</span>
+          <div><h4>Public Portfolio</h4><p>Shareable /u/[username] page</p></div>
+        </div>
+        <div class="roadmap-item">
+          <span class="roadmap-status status-planned">🚧</span>
+          <div><h4>Rich Markdown Editor</h4><p>Replace plain textarea</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs -->
+  <section id="docs">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Documentation</span>
+        <h2>Learn the Ropes</h2>
+      </div>
+      <div class="docs-grid reveal">
+        <a href="https://github.com/Macanthony7/Portforge" target="_blank" class="doc-card" style="text-decoration:none;color:inherit">
+          <div class="doc-icon">🏠</div>
+          <div><h4>Local-First Setup</h4><p>Get started without a server</p></div>
+        </a>
+        <a href="https://github.com/Macanthony7/Portforge" target="_blank" class="doc-card" style="text-decoration:none;color:inherit">
+          <div class="doc-icon">🤖</div>
+          <div><h4>LLM Provider Guide</h4><p>API keys, models &amp; endpoints</p></div>
+        </a>
+        <a href="https://github.com/Macanthony7/Portforge" target="_blank" class="doc-card" style="text-decoration:none;color:inherit">
+          <div class="doc-icon">☁️</div>
+          <div><h4>Cloud Setup (Supabase)</h4><p>Auth, RLS &amp; hosted mode</p></div>
+        </a>
+        <a href="https://github.com/Macanthony7/Portforge" target="_blank" class="doc-card" style="text-decoration:none;color:inherit">
+          <div class="doc-icon">🐛</div>
+          <div><h4>Issues &amp; Discussions</h4><p>Bug reports &amp; feature requests</p></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contributing -->
+  <section id="contributing">
+    <div class="container">
+      <div class="section-header reveal">
+        <span class="section-label">Contributing</span>
+        <h2>Open Source, Always</h2>
+      </div>
+      <div class="contrib-card reveal">
+        <p>Portforge is MIT-licensed and contributions are welcome. Fork, branch, commit, push, and open a PR.</p>
+        <div class="contrib-steps">
+          <div class="contrib-step"><span>1.</span> Fork the repo</div>
+          <div class="contrib-step"><span>2.</span> Create branch</div>
+          <div class="contrib-step"><span>3.</span> Commit changes</div>
+          <div class="contrib-step"><span>4.</span> Open a PR</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>Built with <span class="heart">❤️</span> for the security community · <strong>Portforge Cyber</strong> © 2026 · <strong>Document your craft.</strong></p>
+    </div>
+  </footer>
+
+  <script>
+    // Navbar scroll
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), i * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => revealObserver.observe(el));
+
+    // CVSS counter
+    const cvssTarget = 8.8;
+    const cvssEl = document.getElementById('cvssCounter');
+    let cvssDone = false;
+    const cvssObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !cvssDone) {
+          cvssDone = true;
+          let current = 0;
+          const step = cvssTarget / 40;
+          const interval = setInterval(() => {
+            current += step;
+            if (current >= cvssTarget) { current = cvssTarget; clearInterval(interval); }
+            cvssEl.textContent = current.toFixed(1);
+          }, 40);
+        }
+      });
+    }, { threshold: 0.5 });
+    cvssObserver.observe(cvssEl);
+
+    // Particles
+    function createParticles() {
+      const colors = ['rgba(108,92,231,0.3)', 'rgba(0,229,255,0.3)', 'rgba(0,255,136,0.2)'];
+      for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = Math.random() * 3 + 1;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.animationDuration = (Math.random() * 20 + 15) + 's';
+        p.style.animationDelay = (Math.random() * 20) + 's';
+        document.body.appendChild(p);
+      }
+    }
+    createParticles();
+
+    // Card hover glow
+    document.querySelectorAll('.feature-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(108,92,231,0.1), var(--bg-card) 60%)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.background = 'var(--bg-card)';
+      });
+    });
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a0a4ce047c49de99',t:'MTc4MTIyNDgzMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

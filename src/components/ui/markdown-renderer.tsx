@@ -7,15 +7,15 @@ interface MarkdownRendererProps {
 }
 
 function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`|\[.*?\]\(.*?\))/g)
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|".*?"?\)|\[.*?\]\(.*?\))/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**'))
       return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>
     if (part.startsWith('*') && part.endsWith('*'))
       return <em key={i} className="italic text-white/80">{part.slice(1, -1)}</em>
     if (part.startsWith('`') && part.endsWith('`'))
-      return <code key={i} className="font-mono text-xs bg-white/10 text-emerald-400 px-1.5 py-0.5 rounded">{part.slice(1, -1)}</code>
-    const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/)
+      return <code key={i} className="font-mono text-xs bg-ui-10 text-emerald-400 px-1.5 py-0.5 rounded">{part.slice(1, -1)}</code>
+    const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/)
     if (linkMatch)
       return <a key={i} href={linkMatch[2]} className="text-forge-lilac hover:underline" target="_blank" rel="noopener noreferrer">{linkMatch[1]}</a>
     return part
@@ -33,14 +33,14 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     const line = lines[i]
 
     // Fenced code block
-    if (line.startsWith('```')) {
+    if (line.startsWith("```")) {
       const lang = line.slice(3).trim()
       const codeLines: string[] = []
       i++
-      while (i < lines.length && !lines[i].startsWith('```')) { codeLines.push(lines[i]); i++ }
+      while (i < lines.length && !lines[i].startsWith("```")) { codeLines.push(lines[i]); i++ }
       elements.push(
         <div key={k()} className="my-4 rounded-lg overflow-hidden border border-white/10">
-          {lang && <div className="px-4 py-1.5 bg-white/5 border-b border-white/10 text-xs text-white/40 font-mono">{lang}</div>}
+          {lang && <div className="px-4 py-1.5 bg-ui-05 border-b border-ui-10 text-xs text-white/40 font-mono">{lang}</div>}
           <pre className="p-4 overflow-x-auto bg-black/30">
             <code className="text-sm font-mono text-emerald-400 leading-relaxed">{codeLines.join('\n')}</code>
           </pre>
@@ -54,6 +54,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     if (line.startsWith('### ')) { elements.push(<h3 key={k()} className="text-base font-semibold mt-5 mb-2 text-forge-lilac">{renderInline(line.slice(4))}</h3>); i++; continue }
     if (line.startsWith('#### ')) { elements.push(<h4 key={k()} className="text-sm font-semibold mt-4 mb-2 text-white/80 uppercase tracking-wide">{renderInline(line.slice(5))}</h4>); i++; continue }
     if (line.startsWith('---') || line.startsWith('***')) { elements.push(<hr key={k()} className="my-6 border-white/10"/>); i++; continue }
+    if (line.startsWith('_RP_challenge')) {
+        // Handle RP challenge marker
+        i++; continue;
+    }
     if (line.startsWith('> ')) { elements.push(<blockquote key={k()} className="border-l-2 border-forge-purple pl-4 my-3 text-white/60 italic text-sm">{renderInline(line.slice(2))}</blockquote>); i++; continue }
 
     // Unordered list
@@ -107,7 +111,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
               </thead>
               <tbody>
                 {rows.map((row, ridx) => (
-                  <tr key={ridx} className={ridx % 2 === 0 ? 'bg-white/[0.02]' : ''}>
+                  <tr key={ridx} className={ridx % 2 === 0 ? 'bg-ui-02' : ''}>
                     {row.map((cell, cidx) => <td key={cidx} className="px-4 py-2.5 text-white/70 border-b border-white/5 text-xs">{renderInline(cell)}</td>)}
                   </tr>
                 ))}

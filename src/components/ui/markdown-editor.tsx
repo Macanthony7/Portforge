@@ -46,23 +46,23 @@ export function MarkdownEditor({ value, onChange, placeholder, minHeight = '400p
     { label: 'H3', title: 'Heading 3', fn: () => insertLine('### ', 'Subheading'), cls: 'text-xs' },
     { label: '•', title: 'Bullet list', fn: () => insertLine('- ', 'item'), cls: '' },
     { label: '1.', title: 'Numbered list', fn: () => insertLine('1. ', 'item'), cls: 'font-mono text-xs' },
-    { label: '</>', title: 'Code block', fn: () => insert('```\n', '\n```', 'code here'), cls: 'font-mono text-xs' },
+    { label: '</>', title: 'Code block', fn: () => insert('\n```\n', '\n```\n', 'code here'), cls: 'font-mono text-xs' },
   ]
 
   return (
     <div className="forge-card overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-ui-10 bg-ui-02">
         <div className="flex items-center gap-0.5">
           {tools.map(t => (
             <button key={t.label} title={t.title} onClick={t.fn}
-              className={cn('px-2.5 py-1.5 rounded text-white/50 hover:text-white hover:bg-white/10 transition-all text-sm', t.cls, preview && 'opacity-30 cursor-not-allowed')}>
+              className={cn('px-2.5 py-1.5 rounded text-white/50 hover:text-white hover-bg-ui-10 transition-all text-sm', t.cls, preview && 'opacity-30 cursor-not-allowed')}>
               {t.label}
             </button>
           ))}
         </div>
         <button onClick={() => setPreview(!preview)}
           className={cn('text-xs px-3 py-1.5 rounded transition-all',
-            preview ? 'bg-forge-purple/20 text-forge-lilac border border-forge-purple/30' : 'text-white/40 hover:text-white hover:bg-white/10')}>
+            preview ? 'bg-forge-purple/20 text-forge-lilac border border-forge-purple/30' : 'text-white/40 hover:text-white hover-bg-ui-10')}>
           {preview ? 'Edit' : 'Preview'}
         </button>
       </div>
