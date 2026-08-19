@@ -454,7 +454,7 @@ interface LLMConfig {
 
 ```ts
 interface Project {
-  id: string
+  id: strin
   title: string
   career_track: CareerTrack
   template_id: string
