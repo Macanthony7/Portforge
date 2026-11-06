@@ -8,4 +8,6 @@ dist/
 .DS_Store
 drizzle/migrations/
 .agents/
+/factory/jobs/
+/.worktrees/
 

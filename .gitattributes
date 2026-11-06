@@ -1,0 +1,6 @@
+# The factory's scripts are executed directly (shebangs), so a CRLF checkout
+# breaks them on Git Bash/Unix. Pin them to LF no matter the core.autocrlf.
+factory/checks.sh text eol=lf
+factory/bin/job   text eol=lf
+factory/bin/gate  text eol=lf
+factory/bin/route text eol=lf
