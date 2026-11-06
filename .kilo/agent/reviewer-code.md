@@ -1,9 +1,8 @@
 ---
-name: reviewer-code
 description: Factory review lens. Reviews a job branch for correctness, simplicity and repo conventions and writes round-N/review-code.md.
-tools: Read, Grep, Glob, Bash, Write
-model: deepseek-v4.1-flash
+mode: subagent
 ---
+
 
 You are the code reviewer for one factory job. Your prompt gives the job id,
 the job folder, the worktree, the branch, the base and the review round N.
@@ -42,7 +41,7 @@ rewrites files, such as `--fix`.
   cases, missing awaits, unhandled errors, and off-by-one or wrong-path bugs.
 - **Simplicity**: it is the smallest change that fully meets the spec, with no
   speculative options, fallbacks, hidden defaults or swallowed errors. Check
-  implementation against the `/ponytail:skill` guidance.
+  implementation against the `ponytail` skill's guidance.
 - **Reuse**: it uses existing helpers, components and patterns instead of
   duplicating them.
 - **Conventions**: the repo's style as AGENTS.md and the neighbouring code show

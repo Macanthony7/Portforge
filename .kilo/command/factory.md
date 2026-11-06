@@ -1,34 +1,40 @@
 ---
-name: factory
-description: Run the software factory on GitHub issues. Use when the user types /factory run, /factory run <n>, or /factory followed by anything else (a question, feedback on a job, or a new feature). The session that runs it becomes the one orchestrator for every job.
+description: Run the software factory on GitHub issues — intake, spec, build, gate, review, approve, one PR per issue.
 ---
 
 # Factory
 
 You are the factory's only orchestrator. You work through GitHub issues labeled
-`factory`, run up to `concurrency` jobs at once, and spawn every agent for every
-job. You never write code, specs, reviews or decisions yourself, and you never
-edit `job.json`: the scripts in `factory/bin/` change state and refuse illegal
-moves. When a script refuses, its message says why. Fix the cause or stop and
-tell the user; never work around it.
+`factory`, run one job at a time, and spawn every agent for every job. You never
+write code, specs, reviews or decisions yourself, and you never edit `job.json`:
+the scripts in `factory/bin/` change state and refuse illegal moves. When a
+script refuses, its message says why. Fix the cause or stop and tell the user;
+never work around it.
 
 ```
-/factory run          drain the queue: every open `factory` issue, `concurrency` at a time; also resumes
+/factory run          drain the queue: every open `factory` issue; also resumes
 /factory run <n>      run one issue now
 /factory <anything>   talk to the factory: ask about jobs, give feedback, file a feature
 ```
 
+The user typed: `$ARGUMENTS`. Empty or `run` → the first form. `run <n>` → the
+second. Anything else → the third.
+
+Kilo has no background subagents: every `task` call below **blocks until that
+agent finishes**, then returns its one-line reply. So a run handles one job at
+a time, and you advance the job as soon as the call returns.
+
 ## The pipeline
 
 ```
-intake (fable)     → ACCEPT (scope possibly changed) | NEEDS-INFO | REJECT, posted as an issue comment
-route (script)     → reviewers + models from risk/surfaces via config.json
+intake             → ACCEPT (scope possibly changed) | NEEDS-INFO | REJECT, posted as an issue comment
+route (script)     → reviewers from risk/surfaces via config.json
 worktree           → factory/<job-id> from origin/<base>
-spec-writer (opus) → spec.md
-builder (opus)     → commits; the first push opens a draft PR "Closes #<n>"
+spec-writer        → spec.md
+builder            → commits; the first push opens a draft PR "Closes #<n>"
 gate (script)      → checks.sh; FAIL → builder gets the log, no reviewers spawned
-reviewers (routed) → parallel, WAIT FOR ALL; CHANGES → builder → gate → reviewers
-approver (opus)    → APPROVE: sync origin/<base>, gate, gh pr merge
+reviewers (routed) → in parallel; CHANGES → builder → gate → reviewers
+approver           → APPROVE: sync origin/<base>, gate, gh pr merge
                      ESCALATE: PR ready, decision as PR comment, label factory:needs-human
 ```
 
@@ -66,12 +72,22 @@ agent and for the human, not for you. Your context has to last the whole run.
 
 ## Spawning agents
 
-Spawn every agent with the Agent tool, in the background, with
-`subagent_type` set to the agent's name. Pass `model` from `job.json`
-`agents` for the reviewers, and never for intake, spec-writer, builder or
-approver: their frontmatter sets it. Each agent replies with one line;
-you are notified when it finishes, and you advance that job then. While agents
-run, don't poll and don't wait: end your turn with a one-line status.
+Every agent lives in `.kilo/agent/<name>.md`; its file name is the
+`subagent_type`. Spawn one `task` call per agent:
+
+```
+task(description: "factory intake <id>", subagent_type: "intake", prompt: "<header>")
+task(description: "factory build <id> round <N>", subagent_type: "builder", prompt: "<header> Build round <N>. Port: <port>. ...")
+```
+
+- `subagent_type`: `intake`, `spec-writer`, `builder`, `reviewer-code`,
+  `reviewer-security`, `reviewer-ux`, `reviewer-ui`, `approver`.
+- Do not pass a model: Kilo takes it from the agent file or the session default.
+- To resume the builder, call `task` again with the `task_id` the first call
+  returned, plus the new `prompt`. If you lost the id or a new session is
+  resuming the run, spawn a fresh `builder` and say it is resuming.
+- Parallel reviews: put every reviewer `task` call in **one** message so they
+  interleave, then advance once they all return.
 
 Every prompt starts with the job's header, built from `job.json`:
 
@@ -86,17 +102,12 @@ Agents that open pages get ports. With `n` the job number (`004` → 4), the
 builder gets `5100 + 10n`, `reviewer-ux` `5101 + 10n` and `reviewer-ui`
 `5102 + 10n` (`ports` in `config.json`).
 
-Name the builder `builder-<id>`. Resume it with `SendMessage` to that name
-when this session spawned it; otherwise spawn a new `builder` with that name.
-Start every message to it with `<header>` too.
-
 ## Advancing a job
 
 Each step below runs when the previous agent or script finishes. Report one
 short line per transition, e.g. `004-dark-mode #12: gate PASS → reviewing (code, ux, ui)`.
 
-**intake.** Spawn `intake` with `<header>`. When it returns, read its
-decision:
+**intake.** Spawn `intake` with `<header>`. When it returns, read its decision:
 
 - `ACCEPT`: run `factory/bin/route <id>`, then `factory/bin/job advance <id> spec`
   (it comments on the issue and creates the worktree). Go to **spec**.
@@ -107,12 +118,10 @@ decision:
 **spec.** Spawn `spec-writer` with `<header>`. When it returns,
 `factory/bin/job advance <id> build` and go to **build**.
 
-**build.** Spawn or resume `builder-<id>` with
+**build.** Spawn or resume the builder with
 `<header> Build round <N>. Port: <port>.` plus what this round is for: the
 gate's `round-<N-1>/checks.md`, the reviews in `round-<N-1>/`, or
-`feedback-<k>.md`. Require the builder to invoke and follow `/ponytail:skill`
-for all implementation and build work. When it returns, read `build.md`'s
-first line:
+`feedback-<k>.md`. When it returns, read `build.md`'s first line:
 
 - `STATUS: READY`: `factory/bin/job advance <id> gate`, then go to **gate**. If
   `advance` refuses (nothing pushed, no PR, a dirty tree), resume the builder
@@ -129,9 +138,8 @@ first line:
   No reviewer runs on a failing build.
 
 **review.** Spawn every reviewer in `job.json` `agents.reviewers` **in one
-message**, so they run in parallel: `subagent_type` `reviewer-<r>`, model from
-the same map, prompt `<header> Review round <N>.` plus the port for `ux` and
-`ui`. **WAIT FOR ALL.** Each time one finishes, run
+message**: `subagent_type` `reviewer-<r>`, prompt `<header> Review round <N>.`
+plus the port for `ux` and `ui`. When each returns, run
 `factory/bin/job sync <id>` so the dashboard fills in. When every reviewer has
 finished:
 
@@ -168,16 +176,15 @@ then moves the job to `merged`; stop any agents still running for it.
    yourself: every new issue goes to intake, which decides whether it gets
    built. For a new issue, `factory/bin/job create <n>` prints the job id;
    start it at **intake**.
-3. Each time a job finishes, run `factory/bin/job queue` again and start its
-   `resume` lines you aren't already running and its `new` lines.
-4. When nothing is queued or running, print `factory/bin/job summary <ids>`
-   for the jobs this run touched, then list what waits on a human: PRs to
-   review (merge one to approve it, or give feedback with `/factory`) and
-   questions waiting on authors.
+3. Work a job to its end before starting the next: the `task` calls block.
+4. When nothing is queued or running, print `factory/bin/job summary <ids>` for
+   the jobs this run touched, then list what waits on a human: PRs to review
+   (merge one to approve it, or give feedback with `/factory`) and questions
+   waiting on authors.
 
 **Resuming.** State lives in files, so a new session picks up where a dead one
 stopped. For a `resume` job, run its stage's step again: `intake` and `spec`
-respawn their agent; `build` spawns a new builder told it is resuming (it reads
+respawn their agent; `build` spawns a builder told it is resuming (it reads
 `build.md` and `git log` to see how far the last one got); `gate` runs the
 gate; `review` spawns only the reviewers whose `review-<r>.md` is missing in
 the current round; `approve` respawns the approver; `merging` runs

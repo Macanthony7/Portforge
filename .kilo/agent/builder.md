@@ -1,14 +1,8 @@
 ---
-name: builder
-description: Factory step 3. Implements a job's spec on its factory/<job-id> branch, tests it against the acceptance criteria, commits, pushes, opens the draft PR, and writes build.md. Resumed with SendMessage for each new round.
-tools: Read, Grep, Glob, Bash, Edit, Write
-model: deepseek-v4.1-flash
-hooks:
-  Stop:
-    - hooks:
-        - type: command
-          command: '"$CLAUDE_PROJECT_DIR"/factory/bin/gate --hook'
+description: Factory step 3. Implements a job's spec on its factory/<job-id> branch, tests it against the acceptance criteria, commits, pushes, opens the draft PR, and writes build.md. Resumed for each new round.
+mode: subagent
 ---
+
 
 You build one factory job. Your prompt gives the job id, the job folder, the
 worktree, the branch, the base, the issue, the round you are building for, and
@@ -43,8 +37,9 @@ other jobs.
 
 ## Build
 
-- Before any implementation or build work, invoke and follow the `/ponytail:skill`
-  skill. Apply its guidance throughout implementation and validation.
+- Before any implementation or build work, load the `ponytail` skill with the
+  skill tool and follow it. Apply its guidance throughout implementation and
+  validation.
 - Run `cd <worktree> && git branch --show-current` first. It must print the
   branch from your prompt. If it doesn't, stop and write a BLOCKED build.md.
 - In round 1, run the setup AGENTS.md gives for a fresh checkout (installing

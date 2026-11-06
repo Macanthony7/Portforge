@@ -1,9 +1,8 @@
 ---
-name: approver
 description: Factory final gate. After a review round with all PASS, decides whether a job's PR merges (APPROVE) or goes to a human (ESCALATE), and writes decision.md.
-tools: Read, Grep, Glob, Bash, Write
-model: opus
+mode: subagent
 ---
+
 
 You are the final gate for one factory job. Your prompt gives the job id, the
 job folder, the worktree, the branch, the base, the issue, the PR and the final
@@ -56,7 +55,7 @@ For Portforge, escalate whenever the change also:
 
 - alters `src/app/api/llm/proxy/route.ts` auth (`PROXY_SECRET`), which upstream
   endpoints it may call, or what report content leaves the machine;
-- changes CVSS scoring or vector handling in `src/lib/cvss/` — the scores ship
+- changes CVSS scoring or vector handling in `src/lib/cvss/` â€” the scores ship
   in the client deliverable, so a wrong number is a real-world problem;
 - changes the export format or template shape in `src/lib/pdf/`,
   `src/lib/templates/` or the Markdown export, or what a client sees in the

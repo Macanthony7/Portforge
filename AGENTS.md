@@ -22,7 +22,8 @@ cp .env.example .env.local   # optional; most config lives in Settings → LLM C
 ```
 
 Node 20+ is required. On Windows, run these from Git Bash (the factory scripts
-are bash).
+are bash). The factory also needs the GitHub CLI installed and authenticated
+(`gh auth login`); everything in `factory/bin/` calls `gh` by name.
 
 ## Dev server
 
@@ -49,10 +50,20 @@ what the factory gate executes. Change both together.
 ## Software factory
 
 `/factory run` builds every open GitHub issue labeled `factory` through
-intake → spec → build → gate → review → approve, one PR per issue. State is in
-`factory/jobs/` (gitignored); `factory/bin/job` is its only writer. Checks:
+intake → spec → build → gate → review → approve, one PR per issue. The
+orchestrator is the Kilo command `.kilo/command/factory.md`; the pipeline
+agents are `.kilo/agent/*.md` (`intake`, `spec-writer`, `builder`,
+`reviewer-code`, `reviewer-security`, `reviewer-ux`, `reviewer-ui`,
+`approver`) and are spawned as Kilo subagents. State is in `factory/jobs/`
+(gitignored); `factory/bin/job` is its only writer. Checks:
 `factory/checks.sh`. Dashboard: `cd factory && python3 -m http.server`, then
 open http://localhost:8000/dashboard.html.
+
+Kilo `task` calls block until the subagent finishes, so a run works one job at
+a time and parallel reviews are several `task` calls in one message. Kilo takes
+each agent's model from its file (or the session default), so the `routing` and
+`surface_reviewers` model values in `factory/config.json` only decide *which*
+reviewers run, not which model runs them.
 
 Each job works in its own git worktree, a full checkout of the repo at
 `.worktrees/<job-id>` (gitignored). A tool run from the repo root that doesn't
