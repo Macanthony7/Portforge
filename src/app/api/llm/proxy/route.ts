@@ -12,7 +12,7 @@ type ProxyBody = {
 }
 
 function isStyle(value: unknown): value is LLMProvider {
-  return value === 'openai' || value === 'anthropic'
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(PROVIDER_CONFIGS, value)
 }
 
 export async function POST(req: NextRequest) {
@@ -43,9 +43,9 @@ export async function POST(req: NextRequest) {
 
     // Keys and base URLs come only from server env, never from the request.
     const config = PROVIDER_CONFIGS[provider]
-    const apiKey = process.env[config.apiKeyEnv]
+    const apiKey = process.env[config.keyEnv]
     if (!apiKey) {
-      return NextResponse.json({ error: `Missing API key: set ${config.apiKeyEnv} on the server` }, { status: 400 })
+      return NextResponse.json({ error: `Missing API key: set ${config.keyEnv} on the server` }, { status: 400 })
     }
 
     const baseUrl = (process.env[config.baseUrlEnv] || config.defaultBaseUrl).replace(/\/+$/, '')

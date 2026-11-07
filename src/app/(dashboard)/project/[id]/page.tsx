@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { getProjectById, updateProject } from '@/lib/db'
 import { getTemplateById } from '@/lib/templates'
 import { createLLMClient } from '@/lib/llm/client'
+import { getSuggestedModels } from '@/lib/llm/config'
 import { buildDocumentPrompt, buildRegeneratePrompt } from '@/lib/prompts'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
@@ -86,7 +87,7 @@ export default function ProjectPage() {
 
     try {
       const provider = localStorage.getItem('portforge_provider') === 'openai' ? 'openai' : 'anthropic'
-      const model = localStorage.getItem('portforge_model') || ''
+      const model = localStorage.getItem('portforge_model') || getSuggestedModels(provider)[0] || ''
 
       const client = createLLMClient({ provider, model })
       const prompt = buildDocumentPrompt(template!, finalAnswers)
@@ -122,7 +123,7 @@ export default function ProjectPage() {
 
     try {
       const provider = localStorage.getItem('portforge_provider') === 'openai' ? 'openai' : 'anthropic'
-      const model = localStorage.getItem('portforge_model') || ''
+      const model = localStorage.getItem('portforge_model') || getSuggestedModels(provider)[0] || ''
 
       const client = createLLMClient({ provider, model })
       const prompt = buildRegeneratePrompt(editedDoc || generatedDoc, rewriteFeedback)

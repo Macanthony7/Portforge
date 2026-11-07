@@ -52,11 +52,11 @@ const features = [
   {
     id: "06 // LOCAL",
     title: "Local-First Architecture",
-    desc: "Run entirely in the browser with no backend required. Optional Supabase integration for cloud-backed workflows when you need it.",
+    desc: "Project data lives in the browser; only LLM calls use the app's built-in server proxy. Optional Supabase integration for cloud-backed workflows.",
     icon: Zap,
     span: "md:col-span-5",
     bg: "bg-[#050507]",
-    tags: ["No-Backend", "Optional Cloud"],
+    tags: ["Local Data", "Optional Cloud"],
   },
 ];
 

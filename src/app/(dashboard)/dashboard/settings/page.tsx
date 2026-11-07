@@ -1,10 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { getProviderName, getSuggestedModels } from '@/lib/llm/config'
+import { getProviderName, getSuggestedModels, PROVIDER_CONFIGS } from '@/lib/llm/config'
 import { createLLMClient } from '@/lib/llm/client'
 import type { LLMProvider } from '@/types'
 
-const PROVIDERS: LLMProvider[] = ['anthropic', 'openai']
+const PROVIDERS = Object.keys(PROVIDER_CONFIGS) as LLMProvider[]
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'llm' | 'preferences' | 'about'>('llm')
@@ -15,9 +15,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('portforge_provider')
-    const next: LLMProvider = saved === 'openai' ? 'openai' : 'anthropic'
+    const next = PROVIDERS.includes(saved as LLMProvider) ? (saved as LLMProvider) : 'anthropic'
+    const nextModel = localStorage.getItem('portforge_model') || getSuggestedModels(next)[0] || ''
     setProvider(next)
-    setModel(localStorage.getItem('portforge_model') || getSuggestedModels(next)[0] || '')
+    setModel(nextModel)
+    localStorage.setItem('portforge_provider', next)
+    localStorage.setItem('portforge_model', nextModel)
   }, [])
 
   const handleTestConnection = useCallback(async () => {
@@ -47,6 +50,8 @@ export default function SettingsPage() {
   const handleModelChange = (value: string) => {
     setModel(value)
     localStorage.setItem('portforge_model', value)
+    setTestStatus('idle')
+    setTestError('')
   }
 
   return (
@@ -72,8 +77,9 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="forge-label block mb-2">API Style</label>
+              <label htmlFor="llm-api-style" className="forge-label block mb-2">API Style</label>
               <select
+                id="llm-api-style"
                 value={provider}
                 onChange={e => handleProviderChange(e.target.value as LLMProvider)}
                 className="forge-input"
@@ -85,8 +91,9 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="forge-label block mb-2">Model</label>
+              <label htmlFor="llm-model" className="forge-label block mb-2">Model</label>
               <input
+                id="llm-model"
                 list="model-suggestions"
                 value={model}
                 onChange={e => handleModelChange(e.target.value)}
@@ -132,8 +139,9 @@ export default function SettingsPage() {
               Keys stay on the server and are never sent to the browser. The proxy reads them from the server environment:
             </p>
             <ul className="text-xs text-white/40 space-y-1 font-mono">
-              <li>OPENAI_API_KEY / OPENAI_BASE_URL</li>
-              <li>ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL</li>
+              {PROVIDERS.map(p => (
+                <li key={p}>{PROVIDER_CONFIGS[p].keyEnv} / {PROVIDER_CONFIGS[p].baseUrlEnv}</li>
+              ))}
             </ul>
             <p className="text-xs text-white/30">
               Point a style at a gateway by setting its base URL env var. No keys are stored or read in the browser.
