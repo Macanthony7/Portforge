@@ -1,43 +1,30 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { getModelsForProvider, storeApiKey, getStoredApiKey, clearAllApiKeys, PROVIDER_CONFIGS } from '@/lib/llm/config'
+import { getProviderName, getSuggestedModels } from '@/lib/llm/config'
 import { createLLMClient } from '@/lib/llm/client'
 import type { LLMProvider } from '@/types'
 
-const PROVIDERS: { id: LLMProvider; name: string }[] = [
-  { id: 'anthropic', name: 'Anthropic Claude' },
-  { id: 'openai', name: 'OpenAI' },
-  { id: 'google', name: 'Google Gemini' },
-  { id: 'nvidia', name: 'NVIDIA NIM' },
-  { id: 'groq', name: 'Groq' },
-  { id: 'moonshot', name: 'Moonshot (Kimi)' },
-  { id: 'z-ai', name: 'Zai (GLM)' },
-  { id: 'minimax', name: 'Minimax' },
-]
+const PROVIDERS: LLMProvider[] = ['anthropic', 'openai']
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'llm' | 'preferences' | 'about'>('llm')
   const [provider, setProvider] = useState<LLMProvider>('anthropic')
   const [model, setModel] = useState('')
-  const [apiKey, setApiKey] = useState('')
-  const [customEndpoint, setCustomEndpoint] = useState('')
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
   const [testError, setTestError] = useState('')
 
   useEffect(() => {
-    const saved = getStoredApiKey(provider)
-    setApiKey(saved)
-    const models = getModelsForProvider(provider)
-    if (models.length > 0) setModel(models[0].id)
-    setTestStatus('idle')
-    setTestError('')
-  }, [provider])
+    const saved = localStorage.getItem('portforge_provider')
+    const next: LLMProvider = saved === 'openai' ? 'openai' : 'anthropic'
+    setProvider(next)
+    setModel(localStorage.getItem('portforge_model') || getSuggestedModels(next)[0] || '')
+  }, [])
 
   const handleTestConnection = useCallback(async () => {
     setTestStatus('testing')
     setTestError('')
     try {
-      const client = createLLMClient({ provider, model, apiKey, customEndpoint: customEndpoint || undefined })
+      const client = createLLMClient({ provider, model })
       const result = await client.testConnection()
       setTestStatus(result.success ? 'success' : 'error')
       if (!result.success) setTestError(result.error || 'Connection failed')
@@ -45,23 +32,22 @@ export default function SettingsPage() {
       setTestStatus('error')
       setTestError(err instanceof Error ? err.message : 'Connection failed')
     }
-  }, [provider, model, apiKey, customEndpoint])
+  }, [provider, model])
 
-  const handleSaveKey = () => {
-    storeApiKey(provider, apiKey)
+  const handleProviderChange = (next: LLMProvider) => {
+    setProvider(next)
+    localStorage.setItem('portforge_provider', next)
+    const nextModel = getSuggestedModels(next)[0] || ''
+    setModel(nextModel)
+    localStorage.setItem('portforge_model', nextModel)
+    setTestStatus('idle')
+    setTestError('')
   }
 
-  const handleClearKeys = () => {
-    if (confirm('Are you sure you want to clear all stored API keys? This cannot be undone.')) {
-      clearAllApiKeys()
-      setApiKey('')
-      setTestStatus('idle')
-      setTestError('')
-    }
+  const handleModelChange = (value: string) => {
+    setModel(value)
+    localStorage.setItem('portforge_model', value)
   }
-
-  const models = getModelsForProvider(provider)
-  const providerConfig = PROVIDER_CONFIGS[provider]
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
@@ -86,67 +72,34 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="forge-label block mb-2">LLM Provider</label>
+              <label className="forge-label block mb-2">API Style</label>
               <select
                 value={provider}
-                onChange={e => setProvider(e.target.value as LLMProvider)}
+                onChange={e => handleProviderChange(e.target.value as LLMProvider)}
                 className="forge-input"
               >
                 {PROVIDERS.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p} value={p}>{getProviderName(p)}</option>
                 ))}
               </select>
             </div>
 
             <div>
               <label className="forge-label block mb-2">Model</label>
-              <select value={model} onChange={e => setModel(e.target.value)} className="forge-input">
-                {models.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} — {m.description} (max {m.maxTokens.toLocaleString()} tokens)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="forge-label block mb-2">API Key</label>
               <input
-                type="password"
-                value={apiKey}
-                onChange={e => { setApiKey(e.target.value); handleSaveKey() }}
-                placeholder="sk-... or your provider's API key"
+                list="model-suggestions"
+                value={model}
+                onChange={e => handleModelChange(e.target.value)}
+                placeholder="Enter a model id"
                 className="forge-input"
               />
-              <p className="text-xs text-white/30 mt-1">Stored locally in your browser. Never leaves this device.</p>
+              <datalist id="model-suggestions">
+                {getSuggestedModels(provider).map(m => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+              <p className="text-xs text-white/30 mt-1">Pick a suggestion or enter any model id your endpoint accepts.</p>
             </div>
-
-            {providerConfig?.requireCustomEndpoint && (
-              <div>
-                <label className="forge-label block mb-2">Custom Endpoint (Optional)</label>
-                <input
-                  type="text"
-                  value={customEndpoint}
-                  onChange={e => setCustomEndpoint(e.target.value)}
-                  placeholder="https://your-nim-endpoint.com/v1"
-                  className="forge-input"
-                />
-                <p className="text-xs text-white/30 mt-1">Leave empty to use the default endpoint.</p>
-              </div>
-            )}
-
-            {provider === 'google' && (
-              <div>
-                <label className="forge-label block mb-2">Custom Endpoint (Optional)</label>
-                <input
-                  type="text"
-                  value={customEndpoint}
-                  onChange={e => setCustomEndpoint(e.target.value)}
-                  placeholder="https://your-proxy.com/v1beta"
-                  className="forge-input"
-                />
-              </div>
-            )}
 
             <div className="flex items-center gap-3 pt-2">
               <button onClick={handleTestConnection} disabled={testStatus === 'testing'}
@@ -174,11 +127,17 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="border-t border-white/5 pt-6">
-            <button onClick={handleClearKeys}
-              className="text-sm text-red-400 hover:text-red-300 transition-colors">
-              Clear all stored API keys
-            </button>
+          <div className="border-t border-white/5 pt-6 space-y-2">
+            <p className="text-sm text-white/60">
+              Keys stay on the server and are never sent to the browser. The proxy reads them from the server environment:
+            </p>
+            <ul className="text-xs text-white/40 space-y-1 font-mono">
+              <li>OPENAI_API_KEY / OPENAI_BASE_URL</li>
+              <li>ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL</li>
+            </ul>
+            <p className="text-xs text-white/30">
+              Point a style at a gateway by setting its base URL env var. No keys are stored or read in the browser.
+            </p>
           </div>
         </div>
       )
@@ -204,7 +163,7 @@ export default function SettingsPage() {
 
           <div className="border-t border-white/5 pt-6">
             <label className="forge-label block mb-2">Data Management</label>
-            <p className="text-sm text-white/40 mb-3">All data is stored locally in your browser via IndexedDB.</p>
+            <p className="text-sm text-white/40 mb-3">All project data is stored in this browser via IndexedDB.</p>
             <div className="p-4 bg-white/5 rounded-lg border border-white/10">
               <p className="text-xs text-white/30">No cloud sync. Your projects stay on this device.</p>
             </div>
@@ -246,7 +205,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-            <p className="text-xs text-white/30">Data is stored locally. API keys never leave your browser.</p>
+            <p className="text-xs text-white/30">Data is stored locally. LLM keys stay on the server.</p>
           </div>
         </div>
       )

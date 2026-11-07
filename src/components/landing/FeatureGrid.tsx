@@ -7,7 +7,7 @@ const features = [
   {
     id: "01 // PRIVACY",
     title: "Privacy-First",
-    desc: "All data stored locally via IndexedDB — no server required. API keys stay in your browser, never touch our servers.",
+    desc: "All project data is stored locally via IndexedDB. LLM keys stay on the server and are never sent to the browser.",
     icon: Activity,
     span: "md:col-span-7",
     bg: "bg-[#0A0A0F]",
@@ -16,11 +16,11 @@ const features = [
   {
     id: "02 // LLM",
     title: "Multi-Model AI Support",
-    desc: "Adapters for Anthropic, OpenAI, Google, NVIDIA NIM, Groq, Moonshot, Z-ai (GLM), and Minimax. Bring your own API key.",
+    desc: "Two API styles — OpenAI-compatible and Anthropic-compatible — cover OpenAI, Anthropic, and gateways like Groq, Moonshot, GLM, and NVIDIA NIM. Keys are configured server-side.",
     icon: Zap,
     span: "md:col-span-5",
     bg: "bg-[#050507]",
-    tags: ["8 Providers", "BYO Key"],
+    tags: ["2 API Styles", "Server-Side Keys"],
   },
   {
     id: "03 // CVSS",

@@ -9,7 +9,7 @@ Welcome to the Portforge documentation. Use the links below to navigate.
 | Document | Description |
 |----------|-------------|
 | [Getting Started](./getting-started.md) | Installation, first run, creating your first project |
-| [LLM Providers](./llm-providers.md) | All 8 supported providers, API key setup, adding new providers |
+| [LLM Providers](./llm-providers.md) | OpenAI-compatible and Anthropic-compatible styles, server env vars, gateway setup, adding a new style |
 | [CVSS v3.1 Calculator](./cvss-calculator.md) | Metric reference, severity ratings, programmatic usage |
 | [Cloud Setup](./cloud-setup.md) | Optional Supabase integration for hosted deployments |
 | [Contributing](./contributing.md) | Dev setup, architecture, conventions, PR process |
@@ -25,6 +25,6 @@ Welcome to the Portforge documentation. Use the links below to navigate.
 ## Quick Links
 
 - **Run locally:** `npm install && npm run dev` → [http://localhost:3000](http://localhost:3000)
-- **Get an API key:** [Groq (free)](https://console.groq.com) · [Google Gemini (free)](https://aistudio.google.com) · [Anthropic](https://console.anthropic.com)
+- **Configure an LLM:** set `OPENAI_API_KEY` / `OPENAI_BASE_URL` or `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` on the server, then pick that style in Settings → [LLM Providers](./llm-providers.md)
 - **GitHub Issues:** [github.com/Macanthony7/Portforge/issues](https://github.com/Macanthony7/Portforge/issues)
 - **Discussions:** [github.com/Macanthony7/Portforge/discussions](https://github.com/Macanthony7/Portforge/discussions)

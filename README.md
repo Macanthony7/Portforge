@@ -2,7 +2,7 @@
 
 > **AI-powered, professional security documentation — right from your browser.**
 
-Portforge is an open-source, local-first tool for creating professional security documentation: penetration test reports, CTF write-ups, lab walkthroughs, and product/company docs. It supports multiple LLM providers (BYO API key), includes a CVSS v3.1 calculator, and can run entirely in the browser (IndexedDB) or be extended with Supabase for cloud-backed workflows.
+Portforge is an open-source, local-first tool for creating professional security documentation: penetration test reports, CTF write-ups, lab walkthroughs, and product/company docs. It supports two LLM API styles (OpenAI-compatible and Anthropic-compatible) with server-side keys, includes a CVSS v3.1 calculator, and can run entirely in the browser (IndexedDB) or be extended with Supabase for cloud-backed workflows.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-15-black" alt="Next.js 15" />
@@ -37,15 +37,16 @@ Portforge is an open-source, local-first tool for creating professional security
 ## Features
 
 ### 🔒 Privacy-First
-- All data stored locally via **IndexedDB (Dexie.js)** — no server required
-- API keys stored in browser `localStorage`, never touch our servers
+- All project data stored locally via **IndexedDB (Dexie.js)**
+- LLM keys stay on the server and are never sent to the browser
 - Fully offline-capable once loaded
 
 ### 🤖 Multi-Model LLM Support
-- Adapters for **Anthropic, OpenAI, Google, NVIDIA NIM, Groq, Moonshot, Z-ai (GLM), Minimax**
-- Bring your own API key (BYOAK)
-- Per-provider model selection with descriptions
-- Test connection before committing
+- Two API styles: **OpenAI-compatible** and **Anthropic-compatible**
+- Gateways such as **Groq, Moonshot, GLM, NVIDIA NIM** work through the OpenAI-compatible style by changing the server base URL
+- Keys live in the server environment: `OPENAI_API_KEY` / `OPENAI_BASE_URL` or `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL`
+- Free-text model id with suggested models per style
+- Test connection before generating
 
 ### 📝 Templates
 - Ready-made cybersecurity templates:
@@ -93,7 +94,7 @@ Portforge is an open-source, local-first tool for creating professional security
 | Local DB | [Dexie.js](https://dexie.org/) (IndexedDB) | 4 |
 | Optional Server DB | [Supabase](https://supabase.com/) (Postgres) | — |
 | ORM | [Drizzle ORM](https://orm.drizzle.team/) | — |
-| LLM Integrations | Anthropic / OpenAI / Google / NVIDIA / Groq / Moonshot / Z-ai / Minimax | — |
+| LLM Integrations | OpenAI-compatible / Anthropic-compatible | — |
 
 ---
 
@@ -127,11 +128,12 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ### 4. Configure your LLM
 
-1. Go to **Settings → LLM Configuration**
-2. Select your preferred provider (e.g., Anthropic, OpenAI, Groq)
-3. Paste your API key (stored locally in your browser)
-4. Click **Test Connection**
-5. Start a new project from the Dashboard
+1. Copy `.env.example` to `.env.local`
+2. Set `OPENAI_API_KEY` (and optionally `OPENAI_BASE_URL`) or `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_BASE_URL`). Keys are server-only.
+3. Restart the dev server
+4. Go to **Settings → LLM Configuration**, select the matching **API style**, and enter a model id
+5. Click **Test Connection**
+6. Start a new project from the Dashboard
 
 ---
 
@@ -226,14 +228,14 @@ portforge/
 
 ## Configuration & API Keys
 
-### Local LLM Usage
-- Open the app → **Settings → LLM Configuration**
-- Save provider API keys in the browser (`localStorage`)
-- Keys never leave your device
+### LLM Keys (server-only)
+- Copy `.env.example` to `.env.local`
+- Set `OPENAI_API_KEY` / `OPENAI_BASE_URL` for the OpenAI-compatible style, or `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` for the Anthropic-compatible style
+- In the app, open **Settings → LLM Configuration** and pick the matching API style and model
+- Keys stay in the server environment and are never sent to the browser
 
 ### Hosted Deployments
-- Copy `.env.example` to `.env.local`
-- Populate with your Supabase and LLM credentials
+- Populate `.env.local` with your Supabase and LLM credentials
 - See [SETUP.md](SETUP.md) for detailed environment variable instructions
 
 ### Environment Variables
@@ -245,8 +247,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=   # Supabase anon public key
 SUPABASE_SERVICE_ROLE_KEY=       # Supabase service role key
 DATABASE_URL=                    # Postgres connection string (Transaction pooler)
 
-# LLM (cloud mode only — local uses browser storage)
-ANTHROPIC_API_KEY=               # console.anthropic.com
+# LLM (server-only)
+OPENAI_API_KEY=                  # OpenAI-compatible style key
+OPENAI_BASE_URL=https://api.openai.com/v1  # or any OpenAI-compatible gateway
+ANTHROPIC_API_KEY=               # Anthropic-compatible style key
+ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
+PROXY_SECRET=                    # optional: require x-proxy-secret on proxy calls
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -270,22 +276,18 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## LLM Providers
 
-Portforge supports the following LLM providers out of the box:
+Portforge supports two LLM API styles out of the box:
 
-| Provider | Models | Get API Key |
-|----------|--------|-------------|
-| **Anthropic Claude** | Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku | [console.anthropic.com](https://console.anthropic.com) |
-| **OpenAI** | GPT-4o, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo | [platform.openai.com](https://platform.openai.com) |
-| **Google Gemini** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash | [aistudio.google.com](https://aistudio.google.com) |
-| **NVIDIA NIM** | Mixtral 8x7B, Llama 3.1 series | [build.nvidia.com](https://build.nvidia.com) |
-| **Groq** | Mixtral 8x7B, Llama 3 70B, Llama 3 8B | [console.groq.com](https://console.groq.com) |
-| **Moonshot (Kimi)** | Moonshot v1 8K / 32K / 128K | [platform.moonshot.cn](https://platform.moonshot.cn) |
-| **Z-ai (GLM)** | GLM-4 Flash, GLM-4 Plus | [open.bigmodel.cn](https://open.bigmodel.cn) |
-| **Minimax** | MiniMax-01, MiniMax Text-01 | [platform.minimaxi.com](https://platform.minimaxi.com) |
+| Style | Env vars | Endpoint |
+|-------|----------|----------|
+| **OpenAI-compatible** | `OPENAI_API_KEY`, `OPENAI_BASE_URL` | `{base}/chat/completions` |
+| **Anthropic-compatible** | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL` | `{base}/messages` |
 
-> **Note:** API keys are stored locally in your browser. We do not provide LLM access — you bring your own key.
+OpenAI, Anthropic, Groq, Moonshot, GLM, NVIDIA NIM, and local OpenAI-compatible servers all work through one of these styles. To use a gateway, change the style's base URL env var.
 
-See [LLM_PROVIDERS.md](LLM_PROVIDERS.md) for provider-specific notes and custom endpoint configuration.
+> **Note:** LLM keys stay on the server. The browser never receives them.
+
+See [LLM_PROVIDERS.md](LLM_PROVIDERS.md) for per-style notes and gateway base URLs.
 
 ---
 
@@ -329,7 +331,7 @@ For company documentation support, see `company_schema.sql`.
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Local-first mode | ✅ Ready | IndexedDB via Dexie.js |
-| Multi-model LLM support | ✅ Ready | 8 providers, BYO API key |
+| Multi-model LLM support | ✅ Ready | 2 API styles, server-side keys |
 | CVSS v3.1 calculator |embroidered| Built-in scoring & badges |
 | Markdown export | ✅ Ready | Per-project export |
 | Supabase cloud mode | ✅ Ready | Auth, RLS, streaming AI |

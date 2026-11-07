@@ -1,35 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdapter } from '@/lib/llm/providers'
+import { PROVIDER_CONFIGS } from '@/lib/llm/config'
 import type { LLMProvider } from '@/types'
 
 type ProxyBody = {
-  provider: LLMProvider
-  model: string
+  provider?: string
+  model?: string
   prompt?: string
   maxTokens?: number
-  customEndpoint?: string
   test?: boolean
-  clientApiKey?: string
 }
 
-const ENV_KEY_MAP: Record<LLMProvider, string> = {
-  anthropic: 'ANTHROPIC_API_KEY',
-  openai: 'OPENAI_API_KEY',
-  google: 'GOOGLE_API_KEY',
-  nvidia: 'NVIDIA_API_KEY',
-  groq: 'GROQ_API_KEY',
-  moonshot: 'MOONSHOT_API_KEY',
-  'z-ai': 'ZAI_API_KEY',
-  minimax: 'MINIMAX_API_KEY',
+function isStyle(value: unknown): value is LLMProvider {
+  return value === 'openai' || value === 'anthropic'
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ProxyBody
-    const { provider, model, prompt, maxTokens = 4096, customEndpoint, test = false } = body
+    const { provider, model, prompt, maxTokens = 4096, test = false } = body
 
-    if (!provider || !model) {
-      return NextResponse.json({ error: 'provider and model are required' }, { status: 400 })
+    if (!isStyle(provider)) {
+      return NextResponse.json({ error: 'provider must be one of: openai, anthropic' }, { status: 400 })
+    }
+
+    if (typeof model !== 'string' || !model.trim()) {
+      return NextResponse.json({ error: 'model is required' }, { status: 400 })
     }
 
     if (!test && !prompt) {
@@ -45,17 +41,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const clientApiKey = body.clientApiKey || req.headers.get('authorization')?.split(' ')[1]
-    const envKey = ENV_KEY_MAP[provider]
-    const envApiKey = envKey ? process.env[envKey] : undefined
-    const chosenApiKey = clientApiKey || envApiKey
-    if (!chosenApiKey) {
-      return NextResponse.json({ error: `Missing API key for provider: ${provider}. Provide clientApiKey or set ${envKey}` }, { status: 400 })
+    // Keys and base URLs come only from server env, never from the request.
+    const config = PROVIDER_CONFIGS[provider]
+    const apiKey = process.env[config.apiKeyEnv]
+    if (!apiKey) {
+      return NextResponse.json({ error: `Missing API key: set ${config.apiKeyEnv} on the server` }, { status: 400 })
     }
 
+    const baseUrl = (process.env[config.baseUrlEnv] || config.defaultBaseUrl).replace(/\/+$/, '')
+
     const adapter = getAdapter(provider)
-    const endpoint = adapter.endpoint({ model, customEndpoint })
-    const headers = adapter.headers(chosenApiKey)
+    const endpoint = adapter.endpoint(baseUrl)
+    const headers = adapter.headers(apiKey)
     const upstreamBody = test ? adapter.testBody(model) : adapter.body(prompt || '', model, maxTokens)
 
     const upstream = await fetch(endpoint, {
