@@ -4,11 +4,11 @@ import { useParams, useRouter } from 'next/navigation'
 import { getProjectById, updateProject } from '@/lib/db'
 import { getTemplateById } from '@/lib/templates'
 import { createLLMClient } from '@/lib/llm/client'
-import { getStoredApiKey } from '@/lib/llm/config'
+import { getSuggestedModels } from '@/lib/llm/config'
 import { buildDocumentPrompt, buildRegeneratePrompt } from '@/lib/prompts'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
-import type { Project, Template, QuestionSchema, LLMProvider } from '@/types'
+import type { Project, Template, QuestionSchema } from '@/types'
 
 type Stage = 'loading' | 'questionnaire' | 'generating' | 'reviewing'
 
@@ -86,18 +86,10 @@ export default function ProjectPage() {
     setGeneratedDoc('')
 
     try {
-      const provider = (localStorage.getItem('portforge_provider') as LLMProvider) || 'anthropic'
-      const model = localStorage.getItem('portforge_model') || ''
-      const apiKey = getStoredApiKey(provider)
+      const provider = localStorage.getItem('portforge_provider') === 'openai' ? 'openai' : 'anthropic'
+      const model = localStorage.getItem('portforge_model') || getSuggestedModels(provider)[0] || ''
 
-      if (!apiKey) {
-        setError('No API key configured. Go to Settings → LLM Configuration to add your key.')
-        setStreaming(false)
-        setStage('questionnaire')
-        return
-      }
-
-      const client = createLLMClient({ provider, model, apiKey })
+      const client = createLLMClient({ provider, model })
       const prompt = buildDocumentPrompt(template!, finalAnswers)
 
       let doc = ''
@@ -130,17 +122,10 @@ export default function ProjectPage() {
     setGeneratedDoc('')
 
     try {
-      const provider = (localStorage.getItem('portforge_provider') as LLMProvider) || 'anthropic'
-      const model = localStorage.getItem('portforge_model') || ''
-      const apiKey = getStoredApiKey(provider)
+      const provider = localStorage.getItem('portforge_provider') === 'openai' ? 'openai' : 'anthropic'
+      const model = localStorage.getItem('portforge_model') || getSuggestedModels(provider)[0] || ''
 
-      if (!apiKey) {
-        setError('No API key configured.')
-        setStreaming(false)
-        return
-      }
-
-      const client = createLLMClient({ provider, model, apiKey })
+      const client = createLLMClient({ provider, model })
       const prompt = buildRegeneratePrompt(editedDoc || generatedDoc, rewriteFeedback)
 
       let doc = ''

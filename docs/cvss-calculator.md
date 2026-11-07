@@ -146,7 +146,7 @@ Four presets are available for rapid assessment:
 | Medium | N | H | L | R | U | L | L | N | 5.0 |
 | Low | L | H | H | R | U | N | L | N | 1.6 |
 
-Clicking a preset populates all 8 metrics and updates the score instantly.
+Clicking a preset populates all eight metrics and updates the score instantly.
 
 ---
 

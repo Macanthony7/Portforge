@@ -1,302 +1,99 @@
 # LLM Providers
 
-Portforge supports 8 LLM providers out of the box. All providers use a **Bring Your Own API Key (BYOAK)** model — your key is stored in your browser's `localStorage` and is never sent to any Portforge server.
+Portforge supports two API styles: **OpenAI-compatible** and **Anthropic-compatible**. Both are configured entirely on the server with environment variables — the browser never receives an API key.
 
 ---
 
 ## Table of Contents
 
-- [How API Keys Work](#how-api-keys-work)
-- [Provider Reference](#provider-reference)
-  - [Anthropic](#anthropic)
-  - [OpenAI](#openai)
-  - [Google Gemini](#google-gemini)
-  - [Groq](#groq)
-  - [NVIDIA NIM](#nvidia-nim)
-  - [Moonshot (Kimi)](#moonshot-kimi)
-  - [Z-ai (GLM)](#z-ai-glm)
-  - [Minimax](#minimax)
-- [Custom Endpoints](#custom-endpoints)
-- [Adding a New Provider](#adding-a-new-provider)
+- [How Keys Work](#how-keys-work)
+- [API Styles](#api-styles)
+  - [OpenAI-compatible](#openai-compatible)
+  - [Anthropic-compatible](#anthropic-compatible)
+- [Using a Gateway](#using-a-gateway)
+- [Adding a New Style](#adding-a-new-style)
 
 ---
 
-## How API Keys Work
+## How Keys Work
 
-### In the Browser (Local-First Mode)
+1. Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in the server environment (for example in `.env.local`).
+2. Optionally set `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` to route that style through a gateway.
+3. In **Settings → LLM Configuration**, choose the matching **API style** and model id.
+4. The browser sends only the style, model, and prompt to `/api/llm/proxy`. The proxy reads the key from the server environment and calls the upstream API.
 
-1. You enter your API key in **Settings → LLM Configuration**.
-2. The key is saved to `localStorage` under `portforge_apikey_<provider>`.
-3. When you generate a document, the key is sent in the `clientApiKey` field of the request body to `/api/llm/proxy`.
-4. The proxy uses the key for that request only — it is never logged or persisted server-side.
-
-### In Hosted Deployments
-
-You can set provider API keys as environment variables (e.g. `ANTHROPIC_API_KEY`). The proxy will fall back to these if no `clientApiKey` is provided. This lets you run a shared instance without requiring users to supply their own keys.
-
-See the [env var reference](./cloud-setup.md#environment-variables) for all supported variable names.
+Keys stay on the server and are never sent to the browser. There is no browser-side key storage.
 
 ---
 
-## Provider Reference
+## API Styles
 
-### Anthropic
+### OpenAI-compatible
 
 | | |
 |---|---|
-| API Key | [console.anthropic.com](https://console.anthropic.com) |
-| Base URL | `https://api.anthropic.com/v1` |
-| Auth Header | `x-api-key: <key>` |
-| Stream Format | Server-Sent Events (SSE), Anthropic delta format |
+| Env vars | `OPENAI_API_KEY`, `OPENAI_BASE_URL` |
+| Default base URL | `https://api.openai.com/v1` |
+| Endpoint | `POST {base}/chat/completions` |
+| Auth header | `Authorization: Bearer <key>` |
+| Stream format | OpenAI SSE (`data: {...}`) |
 
-#### Models
+Suggested models: `gpt-4o`, `gpt-4o-mini`, `gpt-4.1`.
 
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `claude-3-5-sonnet-20241022` | Claude 3.5 Sonnet | 8192 | Best balance of speed and quality — recommended |
-| `claude-3-opus-20240229` | Claude 3 Opus | 4096 | Highest capability, slower and more expensive |
-| `claude-3-haiku-20240307` | Claude 3 Haiku | 4096 | Fastest and most affordable |
+This style also covers any gateway that implements the OpenAI chat-completions API.
 
-#### Notes
-
-- Anthropic requires the `anthropic-version: 2023-06-01` header — Portforge sets this automatically.
-- Streaming uses `delta.text` from SSE events, not the OpenAI-compatible format.
-
----
-
-### OpenAI
+### Anthropic-compatible
 
 | | |
 |---|---|
-| API Key | [platform.openai.com](https://platform.openai.com) |
-| Base URL | `https://api.openai.com/v1` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI SSE (`data: {...}`) |
+| Env vars | `ANTHROPIC_API_KEY`, `ANTHROPIC_BASE_URL` |
+| Default base URL | `https://api.anthropic.com/v1` |
+| Endpoint | `POST {base}/messages` |
+| Auth headers | `x-api-key: <key>`, `anthropic-version: 2023-06-01` |
+| Stream format | Anthropic SSE (`delta.text`) |
 
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `gpt-4o` | GPT-4o | 4096 | Multimodal, fast — recommended |
-| `gpt-4-turbo` | GPT-4 Turbo | 4096 | Reliable workhorse |
-| `gpt-4` | GPT-4 | 8192 | Legacy but stable |
-| `gpt-3.5-turbo` | GPT-3.5 Turbo | 4096 | Fastest, most affordable |
+Suggested models: `claude-sonnet-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`.
 
 ---
 
-### Google Gemini
+## Using a Gateway
 
-| | |
-|---|---|
-| API Key | [aistudio.google.com](https://aistudio.google.com) |
-| Base URL | `https://generativelanguage.googleapis.com/v1beta` |
-| Auth Header | `x-goog-api-key: <key>` |
-| Stream Format | Newline-delimited JSON (not OpenAI SSE) |
+Groq, Moonshot, GLM, NVIDIA NIM, and local servers such as Ollama expose an OpenAI-compatible API. Use the **OpenAI-compatible** style and change the base URL:
 
-#### Models
+```bash
+# Groq
+OPENAI_API_KEY=gsk_...
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
 
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `gemini-2.0-flash-exp` | Gemini 2.0 Flash | 8192 | Fast, experimental |
-| `gemini-1.5-pro` | Gemini 1.5 Pro | 8192 | Best quality |
-| `gemini-1.5-flash` | Gemini 1.5 Flash | 8192 | Fast and affordable |
+# Moonshot
+OPENAI_API_KEY=sk-...
+OPENAI_BASE_URL=https://api.moonshot.cn/v1
 
-#### Notes
+# GLM
+OPENAI_API_KEY=...
+OPENAI_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 
-- The endpoint is model-specific: `…/models/<model>:streamGenerateContent`.
-- Gemini uses a different request body format (`contents[].parts[].text`) — Portforge handles this automatically.
-- Gemini has a generous free tier via AI Studio.
+# NVIDIA NIM
+OPENAI_API_KEY=...
+OPENAI_BASE_URL=https://integrate.api.nvidia.com/v1
 
----
-
-### Groq
-
-| | |
-|---|---|
-| API Key | [console.groq.com](https://console.groq.com) |
-| Base URL | `https://api.groq.com/openai/v1` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI-compatible SSE |
-
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `mixtral-8x7b-32768` | Mixtral 8x7B | 32768 | Long context, fast |
-| `llama3-70b-8192` | Llama 3 70B | 8192 | High capability |
-| `llama3-8b-8192` | Llama 3 8B | 8192 | Fastest, most affordable |
-
-#### Notes
-
-- Groq offers a free tier with generous rate limits — great for getting started.
-- Inference is extremely fast due to Groq's custom LPU hardware.
-
----
-
-### NVIDIA NIM
-
-| | |
-|---|---|
-| API Key | [build.nvidia.com](https://build.nvidia.com) |
-| Base URL | `https://integrate.api.nvidia.com/v1` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI-compatible SSE |
-
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `mistralai/mixtral-8x7b-instruct-v0.1` | Mixtral 8x7B | 4096 | Balanced |
-| `meta/llama-3.1-8b-instruct` | Llama 3.1 8B | 4096 | Fast, lightweight |
-| `meta/llama-3.1-70b-instruct` | Llama 3.1 70B | 4096 | High capability |
-
-#### Notes
-
-- NVIDIA NIM supports custom endpoints — useful if you're running NIM containers locally or on-prem.
-- Set a custom endpoint in Settings if you're self-hosting.
-
----
-
-### Moonshot (Kimi)
-
-| | |
-|---|---|
-| API Key | [platform.moonshot.cn](https://platform.moonshot.cn) |
-| Base URL | `https://api.moonshot.cn/v1` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI-compatible SSE |
-
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `moonshot-v1-8k` | Moonshot v1 8K | 8192 | Short context |
-| `moonshot-v1-32k` | Moonshot v1 32K | 32768 | Medium context |
-| `moonshot-v1-128k` | Moonshot v1 128K | 128000 | Very long context |
-
----
-
-### Z-ai (GLM)
-
-| | |
-|---|---|
-| API Key | [open.bigmodel.cn](https://open.bigmodel.cn) |
-| Base URL | `https://open.bigmodel.cn/api/paas/v4` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI-compatible SSE |
-
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `glm-4-flash` | GLM-4 Flash | 4096 | Fast, affordable |
-| `glm-4` | GLM-4 | 8192 | Balanced |
-| `glm-4-plus` | GLM-4 Plus | 8192 | Highest capability |
-
----
-
-### Minimax
-
-| | |
-|---|---|
-| API Key | [platform.minimaxi.com](https://platform.minimaxi.com) |
-| Base URL | `https://api.minimax.chat/v1` |
-| Auth Header | `Authorization: Bearer <key>` |
-| Stream Format | OpenAI-compatible SSE |
-
-#### Models
-
-| Model ID | Display Name | Max Tokens | Notes |
-|----------|-------------|------------|-------|
-| `minimax-01` | MiniMax-01 | 4096 | Flagship model |
-| `minimax-text-01` | MiniMax Text-01 | 4096 | Text optimized |
-
----
-
-## Custom Endpoints
-
-Any provider that sets `requireCustomEndpoint: true` (currently NVIDIA NIM) will prompt for a custom base URL in Settings. You can also override the endpoint for any provider if you're running a compatible API locally (e.g., Ollama with an OpenAI-compatible interface).
-
-To use a custom endpoint:
-
-1. Go to **Settings → LLM Configuration**.
-2. Select your provider.
-3. Enter the full base URL in the **Custom Endpoint** field (e.g., `http://localhost:11434/v1`).
-4. The endpoint field in the adapter will use your URL instead of the default.
-
----
-
-## Adding a New Provider
-
-To add a provider that isn't built in, follow these four steps:
-
-### 1. Register the provider type
-
-In `src/types/index.ts`, add your provider ID to the `LLMProvider` union:
-
-```ts
-export type LLMProvider =
-  | 'anthropic'
-  | 'openai'
-  // ... existing providers
-  | 'my-new-provider'   // add here
+# Local OpenAI-compatible server
+OPENAI_API_KEY=local
+OPENAI_BASE_URL=http://localhost:11434/v1
 ```
 
-### 2. Add provider config
+Then set the model id in Settings to a model the gateway supports. Any non-empty model id is accepted; the upstream API reports invalid ids.
 
-In `src/lib/llm/config.ts`, add an entry to `PROVIDER_CONFIGS`:
+Trailing slashes on base URLs are trimmed before the style path is appended.
 
-```ts
-'my-new-provider': {
-  name: 'My New Provider',
-  baseUrl: 'https://api.mynewprovider.com/v1',
-  models: [
-    { id: 'model-id', name: 'Model Name', maxTokens: 4096, description: 'Description' },
-  ],
-},
-```
+---
 
-### 3. Add the provider adapter
+## Adding a New Style
 
-In `src/lib/llm/providers.ts`, add an entry to `PROVIDER_ADAPTERS`. If the provider uses the OpenAI-compatible SSE format, you can reuse `openaiCompatibleParse`:
+A style is a wire protocol, not a vendor. To add one:
 
-```ts
-'my-new-provider': {
-  endpoint: () => 'https://api.mynewprovider.com/v1/chat/completions',
-  headers: (apiKey) => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`,
-  }),
-  body: (prompt, model, maxTokens) => ({
-    model,
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content: prompt }],
-    stream: true,
-  }),
-  parseStream: openaiCompatibleParse,
-  testMessage: 'Say "connected" and nothing else.',
-  testBody: (model) => ({
-    model,
-    max_tokens: 10,
-    messages: [{ role: 'user', content: 'Say "connected" and nothing else.' }],
-    stream: false,
-  }),
-  parseTest: async (res) => {
-    if (!res.ok) return { success: false, error: `HTTP ${res.status}` }
-    return { success: true }
-  },
-},
-```
+1. Add the style id to the `LLMProvider` union in `src/types/index.ts`.
+2. Add `ProviderConfig` metadata (label, env var names, default base URL, suggested models) to `PROVIDER_CONFIGS` in `src/lib/llm/config.ts`.
+3. Add a `ProviderAdapter` entry to `PROVIDER_ADAPTERS` in `src/lib/llm/providers.ts` with its endpoint path, headers, bodies, and stream parser.
 
-### 4. Add the env var mapping
-
-In `src/app/api/llm/proxy/route.ts`, add the env var name to `ENV_KEY_MAP`:
-
-```ts
-const ENV_KEY_MAP: Record<LLMProvider, string> = {
-  // ... existing entries
-  'my-new-provider': 'MY_NEW_PROVIDER_API_KEY',
-}
-```
-
-Your provider will now appear in the Settings dropdown automatically.
+The proxy and Settings pick the new style up from that metadata.

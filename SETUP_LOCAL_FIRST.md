@@ -1,6 +1,6 @@
 # Portforge Cyber — Local-First Setup
 
-Portforge Cyber is a fully client-side application. No server or database is required.
+Portforge stores your data in the browser and needs no database. LLM calls go through the app's built-in server proxy so API keys stay on the server.
 
 ## Quick Start
 
@@ -17,16 +17,17 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## How it works
 
 - **Storage**: All projects and data are stored in your browser using IndexedDB via Dexie.js.
-- **LLM calls**: API requests go directly from your browser to the LLM provider you configure. Your API key never touches our servers.
+- **LLM calls**: The browser sends generation requests to `/api/llm/proxy`. The server reads `OPENAI_API_KEY` / `OPENAI_BASE_URL` or `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` and calls the upstream API. Keys are never sent to the browser.
 - **Offline**: Once loaded, the app works without an internet connection except when generating documents (which requires the LLM API).
 
 ## First-time setup
 
-1. Go to **Settings → LLM Configuration**
-2. Select your preferred LLM provider (e.g. Anthropic, OpenAI, Groq)
-3. Paste your API key (stored locally in your browser)
-4. Click **Test Connection**
-5. Start a new project from the Dashboard
+1. Copy `.env.example` to `.env.local`.
+2. Set `OPENAI_API_KEY` (and optionally `OPENAI_BASE_URL`) or `ANTHROPIC_API_KEY` (and optionally `ANTHROPIC_BASE_URL`). To use a gateway such as Groq, Moonshot, GLM, or NVIDIA NIM, point `OPENAI_BASE_URL` at it.
+3. Restart the dev server.
+4. Go to **Settings → LLM Configuration**, select the matching API style (OpenAI-compatible or Anthropic-compatible), and enter a model id.
+5. Click **Test Connection**.
+6. Start a new project from the Dashboard.
 
 ## Data management
 
