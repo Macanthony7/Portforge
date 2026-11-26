@@ -4,67 +4,10 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-## What this project is
+<!-- moxie-docs:start -->
+## Moxie Docs Agent Guidance
 
-Portforge is a local-first Next.js 15 app for drafting penetration-test reports:
-projects, sections, templates, CVSS scoring, LLM-assisted prose, and Markdown /
-PDF export. There are no accounts and no server database — all project data
-lives in the browser's IndexedDB (`src/lib/db.ts`, Dexie). The only server route
-is the LLM proxy in `src/app/api/llm/proxy/route.ts`.
+Before editing Macanthony7/Portforge, use the Moxie Docs MCP server for live repository conventions, documentation patterns, gaps, and verified commands. The **moxie-docs** skill (`.claude/skills/moxie-docs/`) has the full edit-then-document workflow - follow it when changing code.
 
-## Setup
-
-Fresh checkout:
-
-```bash
-npm ci
-cp .env.example .env.local   # optional; most config lives in Settings → LLM Configuration
-```
-
-Node 20+ is required. On Windows, run these from Git Bash (the factory scripts
-are bash). The factory also needs the GitHub CLI installed and authenticated
-(`gh auth login`); everything in `factory/bin/` calls `gh` by name.
-
-## Dev server
-
-```bash
-npm run dev -- -p <port>     # next dev --turbopack -p <port>
-```
-
-The factory assigns each job its own port: `5100 + 10n` for the builder,
-`5101 + 10n` for `reviewer-ux`, `5102 + 10n` for `reviewer-ui`.
-
-## Validation
-
-These are the project's checks, and they match `factory/checks.sh`:
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm run build
-```
-
-`bash factory/checks.sh` runs `npm ci` first, then exactly those three, and is
-what the factory gate executes. Change both together.
-
-## Software factory
-
-`/factory run` builds every open GitHub issue labeled `factory` through
-intake → spec → build → gate → review → approve, one PR per issue. The
-orchestrator is the Kilo command `.kilo/command/factory.md`; the pipeline
-agents are `.kilo/agent/*.md` (`intake`, `spec-writer`, `builder`,
-`reviewer-code`, `reviewer-security`, `reviewer-ux`, `reviewer-ui`,
-`approver`) and are spawned as Kilo subagents. State is in `factory/jobs/`
-(gitignored); `factory/bin/job` is its only writer. Checks:
-`factory/checks.sh`. Dashboard: `cd factory && python3 -m http.server`, then
-open http://localhost:8000/dashboard.html.
-
-Kilo `task` calls block until the subagent finishes, so a run works one job at
-a time and parallel reviews are several `task` calls in one message. Kilo takes
-each agent's model from its file (or the session default), so the `routing` and
-`surface_reviewers` model values in `factory/config.json` only decide *which*
-reviewers run, not which model runs them.
-
-Each job works in its own git worktree, a full checkout of the repo at
-`.worktrees/<job-id>` (gitignored). A tool run from the repo root that doesn't
-read `.gitignore` sees those copies too; exclude `.worktrees/` in its config.
+When your Moxie Docs token serves more than one repository, pass `repository: "Macanthony7/Portforge"` in every Moxie Docs tool call from this repo so the context targets Macanthony7/Portforge.
+<!-- moxie-docs:end -->
