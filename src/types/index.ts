@@ -3,21 +3,11 @@ export type DocumentationMode = 'static' | 'integrative'
 export type ProjectStatus = 'draft' | 'complete' | 'exported'
 export type InputType = 'text' | 'code' | 'image' | 'file' | 'list' | 'cvss-table'
 
-export type LLMProvider =
-  | 'anthropic'
-  | 'openai'
-  | 'google'
-  | 'nvidia'
-  | 'groq'
-  | 'moonshot'
-  | 'z-ai'
-  | 'minimax'
+export type LLMProvider = 'openai' | 'anthropic'
 
 export interface LLMConfig {
   provider: LLMProvider
   model: string
-  apiKey: string
-  customEndpoint?: string
 }
 
 export interface Profile {

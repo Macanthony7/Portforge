@@ -24,29 +24,28 @@ This document covers all internal APIs, library functions, and the server-side p
 
 A server-side proxy that forwards LLM requests to the upstream provider. All browser-side LLM calls route through this endpoint to avoid exposing API keys in client-side network traffic.
 
+The two supported styles are **OpenAI-compatible** (`provider: "openai"`) and **Anthropic-compatible** (`provider: "anthropic"`).
+
 #### Request Body
 
 ```ts
 {
-  provider: LLMProvider        // required — e.g. "anthropic", "openai", "groq"
-  model: string                // required — e.g. "claude-3-5-sonnet-20241022"
+  provider: LLMProvider        // required — "openai" or "anthropic"
+  model: string                // required — the model id to request
   prompt?: string              // required unless test: true
   maxTokens?: number           // default: 4096
-  customEndpoint?: string      // optional — override the provider's base URL
   test?: boolean               // default: false — if true, sends a minimal test message
-  clientApiKey?: string        // the user's API key from localStorage
 }
 ```
 
 #### API Key Resolution
 
-The proxy resolves the API key in this order:
+The proxy resolves the key and base URL only from the server environment:
 
-1. `clientApiKey` from the request body
-2. `Authorization: Bearer <token>` header
-3. Environment variable for the provider (e.g. `ANTHROPIC_API_KEY`)
+1. `provider: "openai"` uses `OPENAI_API_KEY` and `OPENAI_BASE_URL` (default `https://api.openai.com/v1`).
+2. `provider: "anthropic"` uses `ANTHROPIC_API_KEY` and `ANTHROPIC_BASE_URL` (default `https://api.anthropic.com/v1`).
 
-If none are found, the proxy returns `400`.
+A body-supplied key, the `Authorization` request header and any client-supplied endpoint are ignored. If the selected style's key env var is missing, the proxy returns `400` with a message naming that variable.
 
 #### Optional Proxy Secret
 
@@ -60,7 +59,7 @@ The proxy streams the upstream provider's response body directly to the client, 
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Missing `provider`, `model`, `prompt`, or API key |
+| `400` | Invalid or missing `provider`/`model`, missing `prompt`, or missing server API key |
 | `403` | Invalid or missing `x-proxy-secret` |
 | `500` | Unexpected server error |
 
@@ -70,7 +69,7 @@ The proxy streams the upstream provider's response body directly to the client, 
 
 **File:** `src/lib/llm/client.ts`
 
-The main class for interacting with LLM providers. Instantiate it with an `LLMConfig` object.
+The main class for interacting with LLM providers. Instantiate it with an `LLMConfig` object. Every request goes to `/api/llm/proxy`; the browser never sends a key.
 
 ### `createLLMClient(config: LLMConfig): LLMClient`
 
@@ -80,9 +79,8 @@ Factory function — preferred way to create a client.
 import { createLLMClient } from '@/lib/llm/client'
 
 const client = createLLMClient({
-  provider: 'groq',
-  model: 'llama3-70b-8192',
-  apiKey: 'your-api-key',
+  provider: 'openai',
+  model: 'gpt-4o',
 })
 ```
 
@@ -368,27 +366,19 @@ Returns a prompt that instructs the LLM to rewrite the entire document based on 
 
 **File:** `src/lib/llm/config.ts`
 
-These helpers manage API keys in `localStorage` and expose provider metadata.
+These helpers expose non-secret style metadata. No helper reads or writes a credential.
 
-### `getStoredApiKey(provider: LLMProvider): string`
+### `PROVIDER_CONFIGS`
 
-Returns the stored API key for a provider, or an empty string if none is saved. Safe to call server-side (returns `''`).
-
-### `storeApiKey(provider: LLMProvider, apiKey: string): void`
-
-Saves an API key to `localStorage` under the key `portforge_apikey_<provider>`.
-
-### `clearAllApiKeys(): void`
-
-Removes all stored API keys from `localStorage` for all known providers.
-
-### `getModelsForProvider(provider: LLMProvider): ProviderModel[]`
-
-Returns the list of available models for a provider.
+A style-keyed table holding each style's display label, API-key env var name, base-URL env var name, default base URL, and suggested model ids.
 
 ### `getProviderName(provider: LLMProvider): string`
 
-Returns the human-readable display name for a provider (e.g. `"Anthropic"`, `"Groq"`).
+Returns the display label for a style (e.g. `"OpenAI-compatible"`).
+
+### `getSuggestedModels(provider: LLMProvider): string[]`
+
+Returns the suggested model ids for a style. Any model id can still be entered in Settings.
 
 ---
 
@@ -402,26 +392,25 @@ Each LLM provider is implemented as a `ProviderAdapter` object. You generally do
 
 ```ts
 interface ProviderAdapter {
-  endpoint: (config: { model: string; customEndpoint?: string }) => string
+  endpoint: (baseUrl: string) => string
   headers: (apiKey: string) => Record<string, string>
   body: (prompt: string, model: string, maxTokens: number) => unknown
   parseStream: (line: string) => StreamChunk | null
-  testMessage: string
   testBody: (model: string) => unknown
-  parseTest: (response: Response) => Promise<{ success: boolean; error?: string }>
 }
 ```
 
+Each adapter appends its style path to the server-supplied base URL: `/chat/completions` for `openai`, `/messages` for `anthropic`.
+
 ### `getAdapter(provider: LLMProvider): ProviderAdapter`
 
-Returns the adapter for a given provider. Throws if the provider is not registered.
+Returns the adapter for a given style. Throws if the style is not registered.
 
-### Adding a New Provider
+### Adding a New Style
 
-1. Add the provider ID to the `LLMProvider` union type in `src/types/index.ts`.
-2. Add a `ProviderConfig` entry to `PROVIDER_CONFIGS` in `src/lib/llm/config.ts`.
+1. Add the style ID to the `LLMProvider` union type in `src/types/index.ts`.
+2. Add a `ProviderConfig` entry to `PROVIDER_CONFIGS` in `src/lib/llm/config.ts` with its env var names and default base URL.
 3. Add a `ProviderAdapter` entry to `PROVIDER_ADAPTERS` in `src/lib/llm/providers.ts`.
-4. Add the env var mapping to `ENV_KEY_MAP` in `src/app/api/llm/proxy/route.ts`.
 
 ---
 
@@ -432,7 +421,7 @@ Returns the adapter for a given provider. Throws if the provider is not register
 ### Core Types
 
 ```ts
-type LLMProvider = 'anthropic' | 'openai' | 'google' | 'nvidia' | 'groq' | 'moonshot' | 'z-ai' | 'minimax'
+type LLMProvider = 'openai' | 'anthropic'
 type CareerTrack = 'cybersecurity'
 type DocumentationMode = 'static' | 'integrative'
 type ProjectStatus = 'draft' | 'complete' | 'exported'
@@ -445,8 +434,6 @@ type InputType = 'text' | 'code' | 'image' | 'file' | 'list' | 'cvss-table'
 interface LLMConfig {
   provider: LLMProvider
   model: string
-  apiKey: string
-  customEndpoint?: string
 }
 ```
 

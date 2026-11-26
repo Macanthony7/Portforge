@@ -10,7 +10,8 @@ Portforge is a local-first Next.js 15 app for drafting penetration-test reports:
 projects, sections, templates, CVSS scoring, LLM-assisted prose, and Markdown /
 PDF export. There are no accounts and no server database — all project data
 lives in the browser's IndexedDB (`src/lib/db.ts`, Dexie). The only server route
-is the LLM proxy in `src/app/api/llm/proxy/route.ts`.
+is the LLM proxy in `src/app/api/llm/proxy/route.ts`. LLM access uses two wire
+styles, OpenAI-compatible and Anthropic-compatible, with server-only keys.
 
 ## Setup
 
@@ -18,7 +19,7 @@ Fresh checkout:
 
 ```bash
 npm ci
-cp .env.example .env.local   # optional; most config lives in Settings → LLM Configuration
+cp .env.example .env.local   # then set OPENAI_API_KEY/OPENAI_BASE_URL or ANTHROPIC_API_KEY/ANTHROPIC_BASE_URL
 ```
 
 Node 20+ is required. On Windows, run these from Git Bash (the factory scripts

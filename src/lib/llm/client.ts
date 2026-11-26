@@ -1,11 +1,22 @@
 import type { LLMConfig } from '@/types'
 import { getAdapter } from './providers'
-import { PROVIDER_CONFIGS } from './config'
 
 export interface GenerateOptions {
   prompt: string
   maxTokens?: number
   onChunk?: (chunk: string) => void
+}
+
+async function errorMessage(res: Response): Promise<string> {
+  const text = await res.text().catch(() => '')
+  try {
+    const parsed = JSON.parse(text)
+    const message = typeof parsed?.error === 'string' ? parsed.error : parsed?.error?.message
+    if (typeof message === 'string') return message
+  } catch {
+    // Not JSON — fall through to the raw body.
+  }
+  return text || `HTTP ${res.status}`
 }
 
 export class LLMClient {
@@ -15,40 +26,18 @@ export class LLMClient {
     return getAdapter(this.config.provider)
   }
 
-  private get baseUrl(): string {
-    const custom = this.config.customEndpoint
-    if (custom) return custom
-    return PROVIDER_CONFIGS[this.config.provider].baseUrl
-  }
-
   async generateText(options: GenerateOptions): Promise<string> {
     const { prompt, maxTokens = 4096, onChunk } = options
     const adapter = this.adapter
-    // In browser, route requests to the server-side proxy to keep API keys secret
-    const isBrowser = typeof window !== 'undefined'
-    let res: Response
 
-    if (isBrowser) {
-      res = await fetch('/api/llm/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: this.config.provider, model: this.config.model, prompt, maxTokens, customEndpoint: this.config.customEndpoint, clientApiKey: this.config.apiKey }),
-      })
-    } else {
-      const endpoint = adapter.endpoint({ model: this.config.model, customEndpoint: this.config.customEndpoint })
-      const body = adapter.body(prompt, this.config.model, maxTokens)
-      const headers = adapter.headers(this.config.apiKey)
-
-      res = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      })
-    }
+    const res = await fetch('/api/llm/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: this.config.provider, model: this.config.model, prompt, maxTokens }),
+    })
 
     if (!res.ok) {
-      const text = await res.text().catch(() => 'Unknown error')
-      throw new Error(`LLM request failed: ${res.status} ${text}`)
+      throw new Error(`LLM request failed: ${res.status} ${await errorMessage(res)}`)
     }
 
     if (!res.body) {
@@ -80,29 +69,19 @@ export class LLMClient {
 
   async testConnection(): Promise<{ success: boolean; error?: string }> {
     try {
-      const adapter = this.adapter
-      const isBrowser = typeof window !== 'undefined'
-      if (isBrowser) {
-        const res = await fetch('/api/llm/proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider: this.config.provider, model: this.config.model, test: true, customEndpoint: this.config.customEndpoint, clientApiKey: this.config.apiKey }),
-        })
-        // proxy.parseTest expects a Response-like object; delegate to adapter.parseTest if available
-        return adapter.parseTest(res)
-      }
-
-      const endpoint = adapter.endpoint({ model: this.config.model, customEndpoint: this.config.customEndpoint })
-      const body = adapter.testBody(this.config.model)
-      const headers = adapter.headers(this.config.apiKey)
-
-      const res = await fetch(endpoint, {
+      const res = await fetch('/api/llm/proxy', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: this.config.provider, model: this.config.model, test: true }),
       })
 
-      return adapter.parseTest(res)
+      if (!res.ok) {
+        return { success: false, error: await errorMessage(res) }
+      }
+
+      const data = await res.json().catch(() => null)
+      if (!data) return { success: false, error: 'Invalid response' }
+      return { success: true }
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Connection failed' }
     }
@@ -111,30 +90,15 @@ export class LLMClient {
   async *streamText(options: GenerateOptions): AsyncGenerator<string, void, unknown> {
     const { prompt, maxTokens = 4096 } = options
     const adapter = this.adapter
-    const isBrowser = typeof window !== 'undefined'
-    let res: Response
 
-    if (isBrowser) {
-      res = await fetch('/api/llm/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: this.config.provider, model: this.config.model, prompt, maxTokens, customEndpoint: this.config.customEndpoint, clientApiKey: this.config.apiKey }),
-      })
-    } else {
-      const endpoint = adapter.endpoint({ model: this.config.model, customEndpoint: this.config.customEndpoint })
-      const body = adapter.body(prompt, this.config.model, maxTokens)
-      const headers = adapter.headers(this.config.apiKey)
-
-      res = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      })
-    }
+    const res = await fetch('/api/llm/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider: this.config.provider, model: this.config.model, prompt, maxTokens }),
+    })
 
     if (!res.ok) {
-      const text = await res.text().catch(() => 'Unknown error')
-      throw new Error(`LLM request failed: ${res.status} ${text}`)
+      throw new Error(`LLM request failed: ${res.status} ${await errorMessage(res)}`)
     }
 
     if (!res.body) {

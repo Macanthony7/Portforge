@@ -64,30 +64,36 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. You should 
 
 ## Configuring Your LLM
 
-Portforge does not provide LLM access — you bring your own API key (BYOAK). Keys are stored in your browser's `localStorage` and never sent to any Portforge server.
+Portforge talks to LLMs through two API styles, both configured with server-only environment variables. The browser never receives a key.
+
+| Style | Key env var | Base URL env var |
+|-------|-------------|------------------|
+| OpenAI-compatible | `OPENAI_API_KEY` | `OPENAI_BASE_URL` |
+| Anthropic-compatible | `ANTHROPIC_API_KEY` | `ANTHROPIC_BASE_URL` |
 
 ### Steps
 
-1. Navigate to **Settings** from the dashboard sidebar (or go to `/dashboard/settings`).
-2. Select your **LLM Provider** from the dropdown (e.g., Groq, OpenAI, Anthropic).
-3. Select a **Model** for that provider.
-4. Paste your **API Key** into the key field.
-5. Click **Test Connection** — you should see a success indicator.
-6. Click **Save**.
+1. Copy `.env.example` to `.env.local`.
+2. Set the key for the style you use. To use a gateway (Groq, Moonshot, GLM, NVIDIA NIM, a local server), also set the base URL — for example `OPENAI_BASE_URL=https://api.groq.com/openai/v1`.
+3. Restart the dev server.
+4. Navigate to **Settings** from the dashboard sidebar (or go to `/dashboard/settings`).
+5. Select the **API style** and enter a model id (suggestions are offered for each style).
+6. Click **Test Connection** — you should see a success indicator.
 
-Your key is now stored locally and will be used for all document generation in this browser session.
+The selected style and model are saved in your browser; the key stays on the server.
 
 ### Recommended Free Options
 
-If you don't have an API key yet, these providers offer free tiers:
+If you don't have an API key yet, these providers offer free tiers and OpenAI-compatible endpoints:
 
 | Provider | Free Tier | Get Key |
 |----------|-----------|---------|
 | Groq | Yes — fast inference | [console.groq.com](https://console.groq.com) |
-| Google Gemini | Yes — generous limits | [aistudio.google.com](https://aistudio.google.com) |
 | NVIDIA NIM | Yes — credits on signup | [build.nvidia.com](https://build.nvidia.com) |
 
-See [LLM Providers](./llm-providers.md) for the full list and per-provider notes.
+Use them with the OpenAI-compatible style and the provider's base URL in `OPENAI_BASE_URL`.
+
+See [LLM Providers](./llm-providers.md) for per-style notes and gateway URLs.
 
 ---
 
@@ -154,8 +160,11 @@ For multi-device access, authentication, and hosted deployments, Portforge suppo
 
 ## Troubleshooting
 
+### Missing API key
+The proxy reports which env var is unset (for example `OPENAI_API_KEY`). Set it in the server environment and restart the dev server.
+
 ### "LLM request failed: 401"
-Your API key is invalid or expired. Go to **Settings** and re-enter your key, then test the connection again.
+The server-side API key is invalid or expired. Update `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`, restart the server, and test the connection again.
 
 ### "LLM request failed: 429"
 You've hit your provider's rate limit. Wait a moment and try again, or switch to a different model/provider.

@@ -199,14 +199,12 @@ Navigate to [http://localhost:3000](http://localhost:3000). You should now be ab
 | `DATABASE_URL` | Cloud mode | Postgres connection string (Transaction pooler) |
 | `NEXT_PUBLIC_APP_URL` | Optional | Your app's public URL, default `http://localhost:3000` |
 | `PROXY_SECRET` | Optional | If set, all `/api/llm/proxy` requests must include `x-proxy-secret: <value>` |
-| `ANTHROPIC_API_KEY` | Optional | Server-side Anthropic key (fallback if no clientApiKey) |
-| `OPENAI_API_KEY` | Optional | Server-side OpenAI key |
-| `GOOGLE_API_KEY` | Optional | Server-side Google key |
-| `NVIDIA_API_KEY` | Optional | Server-side NVIDIA NIM key |
-| `GROQ_API_KEY` | Optional | Server-side Groq key |
-| `MOONSHOT_API_KEY` | Optional | Server-side Moonshot key |
-| `ZAI_API_KEY` | Optional | Server-side Z-ai key |
-| `MINIMAX_API_KEY` | Optional | Server-side Minimax key |
+| `OPENAI_API_KEY` | LLM use | Server-only key for the OpenAI-compatible style |
+| `OPENAI_BASE_URL` | Optional | Base URL for the OpenAI-compatible style; set it to a gateway (default `https://api.openai.com/v1`) |
+| `ANTHROPIC_API_KEY` | LLM use | Server-only key for the Anthropic-compatible style |
+| `ANTHROPIC_BASE_URL` | Optional | Base URL for the Anthropic-compatible style (default `https://api.anthropic.com/v1`) |
+
+LLM keys and base URLs are server-only: the browser never receives them. Only the two API styles above are supported.
 
 ---
 

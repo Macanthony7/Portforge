@@ -7,7 +7,7 @@ A fully scaffolded Next.js 15 project with:
 - Dashboard (project list, stats, new project flow)
 - Career track + template + design theme selection
 - AI questionnaire engine (Static Mode)
-- Streaming AI document generation (Anthropic API)
+- Streaming AI document generation (OpenAI-compatible or Anthropic-compatible API)
 - Per-section rewrite capability
 - Settings (documentation mode toggle, profile)
 - Full TypeScript types + Drizzle ORM schema
@@ -48,9 +48,14 @@ NEXT_PUBLIC_SUPABASE_URL=         ← Supabase → Project Settings → API → 
 NEXT_PUBLIC_SUPABASE_ANON_KEY=    ← Supabase → Project Settings → API → anon public key
 SUPABASE_SERVICE_ROLE_KEY=        ← Supabase → Project Settings → API → service_role key
 DATABASE_URL=                     ← Supabase → Project Settings → Database → URI (Transaction pooler)
-ANTHROPIC_API_KEY=                ← console.anthropic.com → API Keys
+OPENAI_API_KEY=                   ← OpenAI-compatible style key (or a gateway key)
+OPENAI_BASE_URL=https://api.openai.com/v1  ← change to point at a gateway
+ANTHROPIC_API_KEY=                ← Anthropic-compatible style key
+ANTHROPIC_BASE_URL=https://api.anthropic.com/v1
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
+LLM keys are server-only and are never sent to the browser. Set the pair for the style you use; in the app, pick the matching API style in **Settings → LLM Configuration**.
 
 ### Where to find each value in Supabase:
 1. Go to supabase.com → your project
@@ -246,7 +251,7 @@ portforge/
 | Database | Supabase (Postgres) |
 | Auth | Supabase Auth |
 | ORM | Drizzle ORM |
-| AI | Anthropic API (Claude) |
+| AI | OpenAI-compatible or Anthropic-compatible API |
 | Hosting (recommended) | Vercel |
 
 ---

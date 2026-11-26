@@ -45,8 +45,8 @@ portforge/
 │   │   ├── db.ts               # Dexie.js IndexedDB client
 │   │   ├── llm/
 │   │   │   ├── client.ts       # LLMClient class
-│   │   │   ├── config.ts       # Provider configs + localStorage helpers
-│   │   │   └── providers.ts    # Per-provider adapters
+│   │   │   ├── config.ts       # Style configs + env var metadata
+│   │   │   └── providers.ts    # Style adapters
 │   │   ├── prompts/index.ts    # AI prompt builders
 │   │   ├── templates/index.ts  # Template + theme definitions
 │   │   └── utils.ts            # cn(), formatDate(), etc.
@@ -76,7 +76,7 @@ npm install
 npm run dev
 ```
 
-No `.env` file is needed for local development. The app runs fully in the browser.
+No `.env` file is needed to browse the app, but document generation needs server-only LLM keys: `OPENAI_API_KEY` / `OPENAI_BASE_URL` or `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL`.
 
 ### 4. Lint before committing
 
@@ -110,7 +110,7 @@ Upstream LLM Provider APIs
 
 **Browser → proxy → LLM.** The browser never calls LLM APIs directly. All requests go through `/api/llm/proxy` to keep API keys out of browser network logs.
 
-**Provider adapters.** Each LLM provider is a `ProviderAdapter` object with a consistent interface (`endpoint`, `headers`, `body`, `parseStream`, `testBody`, `parseTest`). Adding a provider means adding one object — no changes to `LLMClient`.
+**Style adapters.** Each LLM API style is a `ProviderAdapter` object with a consistent interface (`endpoint`, `headers`, `body`, `parseStream`, `testBody`). The proxy reads the style's key and base URL from server env; adding a style means adding one object and one config entry.
 
 **Templates are data.** Templates and design themes are plain TypeScript objects in `src/lib/templates/index.ts`. No database or CMS required to add a new template.
 
@@ -158,9 +158,9 @@ Upstream LLM Provider APIs
 3. Define `question_schema` (the questionnaire) and `output_structure` (the document sections).
 4. The template will appear automatically in the new project wizard.
 
-### Adding a New LLM Provider
+### Adding a New LLM Style
 
-See [LLM Providers — Adding a New Provider](./llm-providers.md#adding-a-new-provider).
+See [LLM Providers — Adding a New Style](./llm-providers.md#adding-a-new-style).
 
 ### Adding a New Design Theme
 
