@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createProject } from '@/lib/db'
+import { createNewProject } from '@/lib/db'
 import { TEMPLATES, DESIGN_THEMES } from '@/lib/templates'
 
 export default function NewProjectPage() {
@@ -21,7 +21,7 @@ export default function NewProjectPage() {
     const template = templates.find(t => t.id === selectedTemplate)
     if (!template) { setCreating(false); return }
 
-    const project = await createProject({
+    const project = await createNewProject({
       title: title.trim(),
       career_track: 'cybersecurity',
       template_id: template.id,

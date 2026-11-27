@@ -1,10 +1,10 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { getProviderName, getSuggestedModels, PROVIDER_CONFIGS } from '@/lib/llm/config'
+import { getProviderName, getSuggestedModels, LLM_PROVIDER_CONFIGS } from '@/lib/llm/config'
 import { createLLMClient } from '@/lib/llm/client'
 import type { LLMProvider } from '@/types'
 
-const PROVIDERS = Object.keys(PROVIDER_CONFIGS) as LLMProvider[]
+const PROVIDERS = Object.keys(LLM_PROVIDER_CONFIGS) as LLMProvider[]
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'llm' | 'preferences' | 'about'>('llm')
@@ -140,7 +140,7 @@ export default function SettingsPage() {
             </p>
             <ul className="text-xs text-white/40 space-y-1 font-mono">
               {PROVIDERS.map(p => (
-                <li key={p}>{PROVIDER_CONFIGS[p].keyEnv} / {PROVIDER_CONFIGS[p].baseUrlEnv}</li>
+                <li key={p}>{LLM_PROVIDER_CONFIGS[p].keyEnv} / {LLM_PROVIDER_CONFIGS[p].baseUrlEnv}</li>
               ))}
             </ul>
             <p className="text-xs text-white/30">

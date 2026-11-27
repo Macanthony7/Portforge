@@ -8,7 +8,7 @@ export interface ProviderConfig {
   models: string[]
 }
 
-export const PROVIDER_CONFIGS: Record<LLMProvider, ProviderConfig> = {
+export const LLM_PROVIDER_CONFIGS: Record<LLMProvider, ProviderConfig> = {
   anthropic: {
     name: 'Anthropic-compatible',
     keyEnv: 'ANTHROPIC_API_KEY',
@@ -30,9 +30,9 @@ export const PROVIDER_CONFIGS: Record<LLMProvider, ProviderConfig> = {
 }
 
 export function getProviderName(provider: LLMProvider): string {
-  return PROVIDER_CONFIGS[provider].name
+  return LLM_PROVIDER_CONFIGS[provider].name
 }
 
 export function getSuggestedModels(provider: LLMProvider): string[] {
-  return PROVIDER_CONFIGS[provider].models
+  return LLM_PROVIDER_CONFIGS[provider].models
 }

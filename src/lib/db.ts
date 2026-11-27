@@ -29,7 +29,7 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
   return db.projects.get(id)
 }
 
-export async function createProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {
+export async function createNewProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {
   const id = `pf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const now = new Date().toISOString()
   const project: Project = { ...data, id, created_at: now, updated_at: now }
