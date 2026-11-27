@@ -82,6 +82,6 @@ export const PROVIDER_ADAPTERS: Record<LLMProvider, ProviderAdapter> = {
   },
 }
 
-export function getAdapter(provider: LLMProvider): ProviderAdapter {
+export function getProviderAdapter(provider: LLMProvider): ProviderAdapter {
   return PROVIDER_ADAPTERS[provider]
 }

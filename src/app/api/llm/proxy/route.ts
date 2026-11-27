@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdapter } from '@/lib/llm/providers'
-import { PROVIDER_CONFIGS } from '@/lib/llm/config'
+import { getProviderAdapter } from '@/lib/llm/providers'
+import { LLM_PROVIDER_CONFIGS } from '@/lib/llm/config'
 import type { LLMProvider } from '@/types'
 
 type ProxyBody = {
@@ -12,7 +12,7 @@ type ProxyBody = {
 }
 
 function isStyle(value: unknown): value is LLMProvider {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(PROVIDER_CONFIGS, value)
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(LLM_PROVIDER_CONFIGS, value)
 }
 
 export async function POST(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Keys and base URLs come only from server env, never from the request.
-    const config = PROVIDER_CONFIGS[provider]
+    const config = LLM_PROVIDER_CONFIGS[provider]
     const apiKey = process.env[config.keyEnv]
     if (!apiKey) {
       return NextResponse.json({ error: `Missing API key: set ${config.keyEnv} on the server` }, { status: 400 })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     const baseUrl = (process.env[config.baseUrlEnv] || config.defaultBaseUrl).replace(/\/+$/, '')
 
-    const adapter = getAdapter(provider)
+    const adapter = getProviderAdapter(provider)
     const endpoint = adapter.endpoint(baseUrl)
     const headers = adapter.headers(apiKey)
     const upstreamBody = test ? adapter.testBody(model) : adapter.body(prompt || '', model, maxTokens)

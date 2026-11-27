@@ -1,5 +1,5 @@
 import type { LLMConfig } from '@/types'
-import { getAdapter } from './providers'
+import { getProviderAdapter } from './providers'
 
 export interface GenerateOptions {
   prompt: string
@@ -23,7 +23,7 @@ export class LLMClient {
   constructor(private config: LLMConfig) {}
 
   private get adapter() {
-    return getAdapter(this.config.provider)
+    return getProviderAdapter(this.config.provider)
   }
 
   async generateText(options: GenerateOptions): Promise<string> {
